@@ -1,0 +1,156 @@
+name: dows-uim
+
+on:
+  push:
+    branches:
+      - dev-*
+      - sit-*
+      - uat-*
+      - prd-*
+  pull_request:
+    branches:
+      - '*'
+env:
+  BRANCH_NAME: ${{ github.ref_name }}
+  PR_NUMBER: ${{ github.event.pull_request.number || 'NOT_A_PR' }}
+  COMMIT_EMAIL: ${{ github.event.head_commit.author.email || 'unknown' }}
+  WORK_FOLDER: uim
+jobs:
+  CI:
+    #配置权限
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      # 下载代码
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
+
+      - name: get commit and changed file list
+        id: cfl
+        # app_branch=dows-uim:dev-1.0.250330:
+        run: |
+          echo "commit=$(git log -1 --pretty=%B | tr -d '\n')" >> $GITHUB_OUTPUT
+          if ${{ github.event_name == 'pull_request' }}; then
+            echo "changed_files=$(git diff --name-only -r HEAD^1 HEAD | xargs)" >> $GITHUB_OUTPUT
+          else
+            echo "changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | xargs)" >> $GITHUB_OUTPUT
+          fi
+          echo "app_branch=${{ env.MODULE_NAME }}:${{ env.BRANCH_NAME }}" >> $GITHUB_OUTPUT
+          echo "commit_id=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "trigger_env=${{ github.event.client_payload.env }}" >> $GITHUB_OUTPUT
+
+      - name: get branch-version:tag
+        id: btv
+        uses: jungwinter/split@master
+        with:
+          msg: ${{ github.ref_name }}
+          separator: "-"
+          maxsplit: -1
+
+      - name: print branch-version and changed file list
+        run: |
+          echo "=====分支版本：${{ steps.btv.outputs._0 }},${{ steps.btv.outputs._1 }}====="
+          echo "=====触发环境：${{ steps.cfl.outputs.trigger_env }}"
+          echo "=====变化文件:"
+          for file in ${{ steps.cfl.outputs.changed_files }}; do
+              echo "$file was changed"
+          done
+
+
+      - name: Cache JDK
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.jdk/cache
+            ~/.jdk/temurin-jdk-21*
+          key: ${{ runner.os }}-jdk-21-temurin
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+
+      # 本地仓库缓存
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/**/plugin
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+            ${{ runner.os }}-
+
+      # 配置settings.xml用于Maven私库验证
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          repositories: '[{"id":"2290151-snapshot-aLhHBl","url":"${{ secrets.MVN_REPOSITORY }}","releases":{"enabled":"false"},"snapshots":{"enabled":"true","updatePolicy":"always"}}]'
+          servers: '[{ "id": "2290151-snapshot-aLhHBl", "username": "${{ secrets.MVN_ACCOUNT }}", "password": "${{ secrets.MVN_PASS }}" }]'
+
+      - name: deploy with Maven
+        id: deploy_with_maven
+        if: ${{ contains(env.BRANCH_NAME, 'sit') || contains(env.BRANCH_NAME, 'prd') }}
+        #run: mvn -B deploy --file pom.xml
+        run: mvn -B deploy --file pom.xml
+
+
+      - name: gen deploy args
+        id: deploy_args
+        #if: ${{ contains(env.BRANCH_NAME, 'sit') || contains(env.BRANCH_NAME, 'prd') }}
+        run: |
+          IS_TRIGGER=0
+          if [[ "${{ env.BRANCH_NAME }}" == *"sit"* || "${{ env.BRANCH_NAME }}" == *"prd"* ]]; then
+            IS_TRIGGER=1            
+          fi
+         
+          {
+            echo "PROJECT_URL='${{ github.repository }}'"
+            echo "BRANCH_NAME='${{ env.BRANCH_NAME }}'"
+            echo "ACTOR_NAME='${{ github.actor }}'"
+            echo "ACTOR_MAIL='${{ env.COMMIT_EMAIL }}'"
+            echo "CHANGED_FILES='${{ steps.cfl.outputs.changed_files }}'"
+            echo "COMMIT_MSG='${{ steps.cfl.outputs.commit }}'"
+            echo "COMMIT_SHA='${{ steps.cfl.outputs.commit_id }}'"
+            echo "TRIGGER_ENV='${{ steps.cfl.outputs.trigger_env }}'"
+            echo "GH_TOKEN='${{ secrets.GH_TOKEN }}'"
+            echo "IS_TRIGGER='${IS_TRIGGER}'"
+            if [ "${{ steps.deploy_with_maven.outcome }}" == "success" ]; then
+              echo "ACTIONS_STATUS=success"
+            else
+              echo "ACTIONS_STATUS=failure"
+            fi
+          } > ./cicd/${{ steps.btv.outputs._0 }}/webhook.env
+
+      # if: ${{ steps.btv.outputs._0 == 'sit' || steps.cfl.outputs.trigger_env == 'release'}}
+      - name: deploy and notice
+        uses: cross-the-world/ssh-scp-ssh-pipelines@latest
+        with:
+          host: ${{  secrets.AS_HOST_BOLE }}
+          user: ${{ secrets.AS_ACCOUNT_BOLE }}
+          pass: ${{ secrets.AS_PASS_BOLE }}
+          connect_timeout: 6000s
+          first_ssh:
+            mkdir -p ${{ vars.AS_WORKDIR_BOLE }}/${{env.WORK_FOLDER}}/${{ steps.btv.outputs._0 }}
+          scp: |
+            ./cicd/${{ steps.btv.outputs._0 }}/* => ${{ vars.AS_WORKDIR_BOLE }}/${{env.WORK_FOLDER}}/${{ steps.btv.outputs._0 }}/
+            ./cicd/${{ steps.btv.outputs._0 }}/.env => ${{ vars.AS_WORKDIR_BOLE }}/${{env.WORK_FOLDER}}/${{ steps.btv.outputs._0 }}/
+          last_ssh: |
+            echo "脚本路径: ${{ vars.AS_SCRIPT_BOLE }}"
+            echo "仓库: ${{ github.repository }}"
+            echo "分支: ${{ github.ref }}"
+            echo "操作者: ${{ github.actor }}"
+            echo "邮箱: ${{ env.COMMIT_EMAIL }}"
+            echo "变更文件: ${{ steps.cfl.outputs.changed_files }}"
+            echo "提交信息: ${{ steps.cfl.outputs.commit }}"
+            echo "提交SHA: ${{ steps.cfl.outputs.commit_id }}"
+            echo "工作路径: $GITHUB_WORKSPACE"
+            echo "当前路径: $(pwd)"
+            echo "--------------------------------"
+            cd ${{ vars.AS_WORKDIR_BOLE }}/${{env.WORK_FOLDER}}/${{ steps.btv.outputs._0 }}/
+            sh ./webhook.sh
