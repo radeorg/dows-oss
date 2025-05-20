@@ -1,0 +1,7 @@
+#org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+#    org.dows.rade.oss.boot.OssAutoConfiguration,\
+#    org.dows.rade.oss.minio.MinioOssConfiguration,\
+#    org.dows.rade.oss.local.LocalOssConfiguration,\
+#    org.dows.rade.oss.qiniu.QiNiuOssConfiguration,\
+#    org.dows.rade.oss.tencent.TencentOssConfiguration
+#
