@@ -6,13 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.rade.oss.OssInfo;
 import org.dows.rade.oss.tencent.TencentOssClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -33,17 +32,21 @@ public class TencentOssRest {
     private final TencentOssClient tencentOssClient;
 
     @PostMapping("/v1/open/oss/img/upload")
-    public String uploadImg(MultipartFile file) {
+    public OssInfo uploadImg(MultipartFile file) {
         String fileName = getFileName(file);
         checkFileExtension(fileName);
-        String savePath = orgImgPath + String.format("%s.jpg", File.separator + System.currentTimeMillis());
+        String savePath = String.format("%s/%s.%s", orgImgPath, System.currentTimeMillis(), fileName.substring(fileName.lastIndexOf(".")+1));
         try {
-            OssInfo ossInfo = tencentOssClient.upLoad(file.getInputStream(), savePath, false);
-            return ossInfo.getFilePath();
+            return tencentOssClient.upLoad(file.getInputStream(), savePath, false);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    @GetMapping("/v1/open/oss/img/preview")
+    public String uploadImg(@RequestParam String filePath) {
+        return tencentOssClient.presignedViewUrl(filePath, 5 * 60L);
     }
 
     private String getFileName(MultipartFile file) {
