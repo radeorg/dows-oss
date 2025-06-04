@@ -1,0 +1,65 @@
+stages:
+  - check
+  - report
+  - sonarqube
+  - deploy
+  - trigger
+
+variables:
+  ENV_NAME: ""
+  VER_NAME: ""
+
+before_script:
+  - |
+    if [[ "$CI_COMMIT_REF_NAME" =~ ^([^-]+)-(.+)$ ]]; then
+      export ENV_NAME=${BASH_REMATCH[1]}
+      export VER_NAME=${BASH_REMATCH[2]}
+    elif  [[ "$CI_COMMIT_REF_NAME" = "main" ]]; then
+      echo "合并发布，source: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME; target: CI_COMMIT_REF_NAME || CI_MERGE_REQUEST_TARGET_BRANCH_NAME = $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      if [[ "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" =~ ^([^-]+)-(.+)$ ]]; then
+        export ENV_NAME=prd
+        export VER_NAME=${BASH_REMATCH[2]}
+      fi
+    fi
+  #  - sed -i "s/\$VERSION/$VER_NAME/g" ./cicd/$ENV_NAME/.env
+  - export $(cat ./cicd/$ENV_NAME/gitlab.env | xargs)
+  - export $(cat ./cicd/$ENV_NAME/maven.env | xargs)
+  - export $(cat ./cicd/$ENV_NAME/ssh.env | xargs)
+  - export $(cat ./cicd/$ENV_NAME/webhook.env | xargs)
+  - export $(cat ./cicd/$ENV_NAME/ci.env | xargs)
+  - export $(cat ./cicd/$ENV_NAME/cd.env | xargs)
+
+sonar-job:
+  stage: sonarqube
+  #  only:
+  #    - main
+  #    #- /^prd/
+  tags:
+    - cicd
+  script:
+    - echo "sonar scanner begin..."
+    - sonar-scanner -Dsonar.analysis.CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME -Dsonar.branch.name=$CI_COMMIT_REF_NAME -Dsonar.projectVersion=$CI_COMMIT_REF_NAME
+
+deploy-job:
+  stage: deploy
+  tags:
+    - cicd
+  script:
+    - echo "current branch is $CI_COMMIT_REF_NAME"
+    - echo "execute cmd :mvn clean deploy -Dmaven.test.skip=true to deploy shdy-task modules"
+    - mvn clean deploy -s /usr/share/maven/conf/settings-shdy.xml -U -Dmaven.test.skip=$MAVEN_SKIP_TESTS
+    - cfl=$(git log -m -1 --name-only --pretty="format:" HEAD)
+    - cfs=$(echo $cfl | tr '\n' ' ')
+    - ccm=$(echo $CI_COMMIT_MESSAGE | tr '\n' ' ')
+    - echo "参数列表:'$GITLAB_USER_NAME' '$GITLAB_USER_EMAIL' '$MODULE_CODE' '$CI_COMMIT_REF_NAME' '$CI_COMMIT_SHA' '$ccm' '$cfs'"
+    - sh ./cicd/$ENV_NAME/ci_webhook.sh "$GITLAB_USER_NAME" "$GITLAB_USER_EMAIL" "$MODULE_CODE/$MODULE_NAME" "$CI_COMMIT_REF_NAME" "$CI_COMMIT_SHA" "$ccm" "$cfs" "true"
+    - echo "scp $ENV_NAME config files to remote server[$SSH_HOST/$APPLICATION_ROOT]"
+    - sshpass -p $SSH_PASS scp -r -o StrictHostKeyChecking=no ./cicd/$ENV_NAME $SSH_USER@$SSH_HOST:$APPLICATION_ROOT
+    - echo "deploy complete..."
+
+trigger-job:
+  stage: trigger
+  tags:
+    - cicd
+  script:
+    - sshpass -p $SSH_PASS ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST sh $APPLICATION_ROOT/$ENV_NAME/cd.sh "$MODULE_NAME" "$MODULE_CODE" "$ENV_NAME" "$VER_NAME" "$MODULE_URL" "$GITLAB_USER_NAME" "$GITLAB_USER_EMAIL"

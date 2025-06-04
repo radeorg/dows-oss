@@ -1,0 +1,26 @@
+version: '3'
+services:
+  dev-api-admin-wes:
+    image: $REGISTRY_URL/$DOCKER_IMAGE:$TAG
+    restart: unless-stopped
+    container_name: $DOCKER_CONTAINER_NAME
+    environment:
+      #- JVM_OPTS=-server -Xms1024m -Xmx1024m -XX:MaxGCPauseMillis=500 -XX:+UseParallelGC[-XX:+UseZGC] -XX:+HeapDumpBeforeFullGC -XX:HeapDumpPath=/dows/dxz-tenant/logs/dump
+      - JVM_OPTS=-server -Xms1024m -Xmx1024m  -XX:+HeapDumpBeforeFullGC -XX:HeapDumpPath=/application/logs
+      - JAVA_OPTS=-Djasypt.encryptor.password=02700083-9fd9-4b82-a4b4-9177e0560e92 -Dspring.depend.location=/application/configs/ -Dspring.profiles.active=dev
+      #- APM=-javaagent:/dows/paas/apm/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=dxz-tenant-sit
+    ports:
+      - $EHP:8080
+      - $EWP:80
+      - $EDP:5005
+    volumes:
+      - ./logs:/application/logs
+      - ./configs:/application/configs
+      - ./resources:/application/resources
+      #- /dows/paas/apm/skywalking-agent-8.16.0:/dows/dxz-tenant/skywalking-agent
+    networks:
+      - $DOCKER_NETWORK
+networks:
+  dev_net:
+    external: true
+

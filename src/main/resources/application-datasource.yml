@@ -1,0 +1,46 @@
+dows:
+  datasource:
+    mysql:
+      acre-mysql:
+        enable: false
+        pool:
+          type: hikari
+          maximum-pool-size: 100
+          minimum-idle: 50
+          connectionTimeout: 6000
+        #        driverClassName: org.mariadb.jdbc.Driver
+        dialect: MYSQL
+        host: 192.168.111.103
+        port: 13306
+        username: root
+        password: shdy123!
+        database: wes_all
+        properties:
+          serverTimezone: GMT%2B8
+          autoReconnect: true
+          allowMultiQueries: true
+          useUnicode: true
+          characterEncoding: utf8
+          zeroDateTimeBehavior: convertToNull
+          useSSL: false
+    mssql:
+      acre-mssql:
+        enable: true
+        pool:
+          type: hikari
+          maximum-pool-size: 100
+          minimum-idle: 50
+          connectionTimeout: 6000
+        #        driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+        dialect: SQLSERVER
+        host: 192.168.111.103
+        port: 11433
+        username: sa
+        password: shdy123!
+        database: acre
+        properties:
+          encrypt: true
+          trustServerCertificate: true
+          characterEncoding: UTF-8
+
+

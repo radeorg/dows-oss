@@ -1,0 +1,1 @@
+根据需要修改.env文件中的环境变量，然后执行 sh cicd.sh 触发启动application 

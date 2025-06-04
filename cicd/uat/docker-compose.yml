@@ -1,0 +1,26 @@
+version: '3'
+services:
+  dev-api-admin-wes:
+    image: $REGISTRY/wes/dev-api-admin-wes:$TAG
+    restart: unless-stopped
+    container_name: dev-api-admin-wes
+    environment:
+      #- JVM_OPTS=-server -Xms1024m -Xmx1024m -XX:MaxGCPauseMillis=500 -XX:+UseParallelGC[-XX:+UseZGC] -XX:+HeapDumpBeforeFullGC -XX:HeapDumpPath=/dows/dxz-tenant/logs/dump
+      - JVM_OPTS=-server -Xms1024m -Xmx1024m  -XX:+HeapDumpBeforeFullGC -XX:HeapDumpPath=/dows/wes-admin/logs
+      - JAVA_OPTS=-Djasypt.encryptor.password=02700083-9fd9-4b82-a4b4-9177e0560e92 -Dspring.config.location=/dows/wes-admin/configs/ -Dspring.profiles.active=dev
+      #- APM=-javaagent:/dows/paas/apm/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=dxz-tenant-sit
+    ports:
+      - $EHP:8080
+      - $EWP:80
+    volumes:
+      - ./logs:/dows/wes-admin/logs
+      - ./configs:/dows/wes-admin/configs
+      - ./resources:/dows/wes-admin/resources
+      #- /dows/paas/apm/skywalking-agent-8.16.0:/dows/dxz-tenant/skywalking-agent
+    networks:
+      - wes_dev
+
+networks:
+  wes_dev:
+    external: true
+

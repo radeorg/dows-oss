@@ -1,0 +1,77 @@
+server:
+  undertow:
+    buffer-size: 1024
+    direct-buffers: true
+    threads:
+      io: 4
+      worker: 32
+  #  servlet:
+  #    context-path: /${spring.application.name}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+
+spring:
+  application:
+    name: dows-oss
+  profiles:
+    include: mysql,apidoc,mybatis,caffeine,rade,feign,oss
+    active: sit
+
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+logging:
+  level:
+    root: info
+
+---
+#开发环境
+spring:
+  config:
+    activate:
+      on-profile: dev
+server:
+  port: 18001
+orgImgPath: /applications/resources/img/org/
+
+rade:
+  cacheName: hrm
+  encryptor:
+    enable: true
+    algorithm: AES
+    secretKey: 3fb2uPksjNOnxZI3
+
+---
+#测试环境
+spring:
+  config:
+    activate:
+      on-profile: sit
+server:
+  port: 28002
+orgImgPath: /applications/resources/img/org/
+
+---
+#测试环境
+spring:
+  config:
+    activate:
+      on-profile: uat
+server:
+  port: 38001
+
+---
+#测试环境
+spring:
+  config:
+    activate:
+      on-profile: prd
+server:
+  port: 48001
