@@ -5,13 +5,15 @@ import com.mybatisflex.core.query.QueryChain;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.constant.OssUploaderStateCodeConstant;
+import org.dows.oss.constant.OssUploaderConstant;
 import org.dows.oss.entity.OssUploaderEntity;
 import org.dows.oss.reponse.CallbackBizResponse;
 import org.dows.oss.reponse.QuerySchedulerOssUploadResponse;
-import org.dows.oss.api.OssUploadRequest;
+import org.dows.oss.request.OssUploadRequest;
 import org.dows.oss.request.QuerySchedulerOssUploadRequest;
 import org.dows.oss.service.OssUploaderService;
+import org.dows.oss.utils.CommonUtil;
+import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.aac.AacUser;
 import org.dows.rade.oss.OssInfo;
 import org.dows.rade.oss.tencent.TencentOssClient;
@@ -27,8 +29,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
@@ -55,7 +55,7 @@ public class OssFileHandleBiz {
         try {
             return tencentOssClient.upLoad(file.getInputStream(), savePath, false);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("上传文件失败: {}", fileName, e);
             throw new RuntimeException(e);
         }
     }
@@ -88,20 +88,22 @@ public class OssFileHandleBiz {
                 String filePath = System.getProperty("user.home")
                         + orgPath + File.separator
                         + ossUploadRequest.getSource() + File.separator
-                        + getDate("yyMMdd");
+                        + CommonUtil.formatDate(new Date(), "yyMMdd");
                 File dest = new File(filePath + File.separator + md5 + fileName.substring(fileName.lastIndexOf(".")));
                 File parentDir = dest.getParentFile();
-                if (!parentDir.exists()) {
-                    parentDir.mkdirs();
-                }
                 try {
+                    if (!parentDir.exists()) {
+                        if (!parentDir.mkdirs()) {
+                            throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
+                        }
+                    }
                     file.transferTo(dest);
                     saveOssUploader(ossUploadRequest, filePath, fileName, dest, idx);
                     sucessNum++;
                 } catch (Exception e) {
                     log.error("文件上传失败: {}", fileName, e);
-                    if (dest.exists()) {
-                        dest.delete();
+                    if (dest.exists() && !dest.delete()) {
+                        log.error("文件删除失败: {}", dest.getAbsolutePath());
                     }
                     failInfo.put(ossUploadRequest.getBizIds().get(idx), e.getMessage());
                 }
@@ -129,18 +131,22 @@ public class OssFileHandleBiz {
         if (responses != null && !responses.isEmpty()) {
             for (QuerySchedulerOssUploadResponse response : responses) {
                 String fileName = File.separator + response.getFileMd5() + response.getFileExt();
-                FileInputStream file = new FileInputStream(response.getFileTempPath() + fileName);
-                String savePath = response.getFileBasePath() + File.separator + getDate("yyMMdd") + File.separator + fileName;
-                OssInfo info = tencentOssClient.upLoad(new BufferedInputStream(file), savePath, false);
+                try {
+                    FileInputStream file = new FileInputStream(response.getFileTempPath() + fileName);
+                    String savePath = response.getFileBasePath() + File.separator
+                            + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
+                            + fileName;
+                    OssInfo info = tencentOssClient.upLoad(new BufferedInputStream(file), savePath, false);
 
-                StringBuilder sb = new StringBuilder(response.getStateCode());
-                sb.setCharAt(0, '1');  // 直接修改指定位置字符
-
-                OssUploaderEntity entity = new OssUploaderEntity();
-                entity.setOssUploaderId(response.getOssUploaderId());
-                entity.setStateCode(sb.toString());
-                entity.setFileLink(info.getFilePath());
-                ossUploaderService.updateById(entity);
+                    OssUploaderEntity entity = new OssUploaderEntity();
+                    entity.setOssUploaderId(response.getOssUploaderId());
+                    entity.setStateCode(editStateCode(response.getStateCode(), 0));
+                    entity.setFileLink(info.getFileLink());
+                    entity.setFileBasePath(info.getFilePath());
+                    ossUploaderService.updateById(entity);
+                } catch (Exception e){
+                    log.error("文件上传失败: {}", fileName, e);
+                }
             }
         }
     }
@@ -148,14 +154,35 @@ public class OssFileHandleBiz {
     /**
      * 将本地文件进行解析，将解析出来的格式化的文本存储到COS服务
      */
-    public void parseLocalFileToCos(List<QuerySchedulerOssUploadResponse> responses){
-        // TODO 解析上传COS
+    public void parseLocalFileToCos(List<QuerySchedulerOssUploadResponse> responses) {
+        if (responses != null && !responses.isEmpty()) {
+            for (QuerySchedulerOssUploadResponse response : responses) {
+                String fileName = response.getFileTempPath() + File.separator + response.getFileMd5() + response.getFileExt();
+                try {
+                    String savePath = response.getTxtPath() + File.separator
+                            + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
+                            + response.getFileMd5() + ".txt";
+                    String parseContent = FileParseUtil.convertToMarkdown(fileName);
+                    parseContent = FileParseUtil.convertToMarkdown(parseContent);
+                    OssInfo info = tencentOssClient.upLoad(new ByteArrayInputStream(parseContent.getBytes()), savePath, false);
+
+                    OssUploaderEntity entity = new OssUploaderEntity();
+                    entity.setOssUploaderId(response.getOssUploaderId());
+                    entity.setStateCode(editStateCode(response.getStateCode(), 1));
+                    entity.setTxtLink(info.getFileLink());
+                    entity.setTxtBasePath(info.getFilePath());
+                    ossUploaderService.updateById(entity);
+                } catch (Exception e){
+                    log.error("文件解析失败: {}", fileName, e);
+                }
+            }
+        }
     }
 
     /**
      * 查询待回调文件
      */
-    public Page<CallbackBizResponse> queryOssUploadFile(QuerySchedulerOssUploadRequest request){
+    public Page<CallbackBizResponse> queryWaitCallbackOssUploadFile(QuerySchedulerOssUploadRequest request){
         Page<CallbackBizResponse> page = new Page<>(
                 Long.valueOf(request.getPageNum()),
                 Long.valueOf(request.getPageSize())
@@ -193,13 +220,17 @@ public class OssFileHandleBiz {
     public void callbackBiz(List<CallbackBizResponse> responses){
         if (responses != null && !responses.isEmpty()) {
             for (CallbackBizResponse response : responses) {
-                ResponseEntity<String> callbackResponse = new RestTemplate().postForEntity(response.getCallbackUrl(), response, String.class);
                 OssUploaderEntity entity = new OssUploaderEntity();
                 entity.setOssUploaderId(response.getOssUploaderId());
-                System.out.println(callbackResponse.getStatusCode());
-                if (callbackResponse.getStatusCode().toString().equals("200 OK")) {
-                    entity.setCallbackState(1);
-                } else {
+                try {
+                    ResponseEntity<String> callbackResponse = new RestTemplate().postForEntity(response.getCallbackUrl(), response, String.class);
+                    if (callbackResponse.getStatusCode().toString().equals("200 OK")) {
+                        entity.setCallbackState(1);
+                    } else {
+                        entity.setCallbackState(2);
+                    }
+                }  catch (Exception e) {
+                    log.error("回调失败", e);
                     entity.setCallbackState(2);
                 }
                 ossUploaderService.updateById(entity);
@@ -221,11 +252,12 @@ public class OssFileHandleBiz {
                         OssUploaderEntity:: getFileTempPath,
                         OssUploaderEntity:: getFileMd5,
                         OssUploaderEntity:: getFileExt,
-                        OssUploaderEntity:: getTxtBasePath,
+                        OssUploaderEntity:: getTxtPath,
                         OssUploaderEntity::getStateCode,
                         OssUploaderEntity:: getExpireDate)
-                .eq(OssUploaderEntity::getStateCode, request.getStateCode(), request.getStateCodeType() != null && request.getStateCodeType().equals(OssUploaderStateCodeConstant.STATE_TYPE_EQ))
-                .likeLeft(OssUploaderEntity::getStateCode, request.getStateCode(), request.getStateCodeType() != null && request.getStateCodeType().equals(OssUploaderStateCodeConstant.STATE_TYPE_LEFT_LIKE))
+                .eq(OssUploaderEntity::getStateCode, request.getStateCode(), request.getStateCodeType() != null && request.getStateCodeType().equals(OssUploaderConstant.STATE_TYPE_EQ))
+                .likeLeft(OssUploaderEntity::getStateCode, request.getStateCode(), request.getStateCodeType() != null && request.getStateCodeType().equals(OssUploaderConstant.STATE_TYPE_LEFT_LIKE))
+                .like(OssUploaderEntity::getTrigger, request.getTrigger(), request.getTrigger() != null)
                 .ge(OssUploaderEntity::getExpireDate, request.getStartTime(), request.getStartTime() != null)
                 .le(OssUploaderEntity::getExpireDate, request.getEndTime(), request.getEndTime() != null)
                 .orderBy(OssUploaderEntity::getUt)
@@ -239,12 +271,16 @@ public class OssFileHandleBiz {
     public void deleteLocalFile(List<QuerySchedulerOssUploadResponse> responses){
         if (responses != null && !responses.isEmpty()) {
             for (QuerySchedulerOssUploadResponse response : responses) {
-                File file = new File(response.getFileTempPath()
-                        + File.separator
-                        + response.getFileMd5()
-                        + response.getFileExt());
-                if (file.exists()) {
-                    file.delete();
+                try{
+                    File file = new File(response.getFileTempPath()
+                            + File.separator
+                            + response.getFileMd5()
+                            + response.getFileExt());
+                    if (file.exists() && !file.delete()) {
+                        log.error("文件删除失败: {}", file.getAbsolutePath());
+                    }
+                } catch (Exception e) {
+                    log.error("文件删除失败: {}", response.getFileTempPath(), e);
                 }
             }
         }
@@ -280,11 +316,6 @@ public class OssFileHandleBiz {
         return fileMd5s;
     }
 
-    private String getDate(String format){
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-        return LocalDate.now().format(formatter);
-    }
-
     private void saveOssUploader(OssUploadRequest ossUploadRequest, String filePath, String fileName, File dest, int idx){
         OssUploaderEntity ossUploaderEntity = new OssUploaderEntity();
         ossUploaderEntity.setBizId(ossUploadRequest.getBizIds().get(idx));
@@ -294,8 +325,8 @@ public class OssFileHandleBiz {
         ossUploaderEntity.setFileMd5(ossUploadRequest.getMd5s().get(idx));
         ossUploaderEntity.setFileExt(fileName.substring(fileName.lastIndexOf(".")));
         ossUploaderEntity.setFileSize(dest.length());
-        ossUploaderEntity.setFileBasePath(ossUploadRequest.getFilePath());
-        ossUploaderEntity.setTxtBasePath(ossUploadRequest.getTxtPath());
+        ossUploaderEntity.setFilePath(ossUploadRequest.getFilePath());
+        ossUploaderEntity.setTxtPath(ossUploadRequest.getTxtPath());
         ossUploaderEntity.setTrigger(ossUploadRequest.getTrigger().toString());
         ossUploaderEntity.setCallbackUrl(ossUploadRequest.getCallbackUrl());
         ossUploaderEntity.setSource(ossUploadRequest.getSource());
@@ -312,5 +343,17 @@ public class OssFileHandleBiz {
         }
         AacUser aacUser = (AacUser) principal;
         return aacUser.getAccountId();
+    }
+
+    /**
+     * 直接修改指定位置字符为1
+     * @param stateCode 需修改的字符串
+     * @param index 修改下标
+     * @return 返回修改后的字符串
+     */
+    private String editStateCode(String stateCode, int index){
+        StringBuilder sb = new StringBuilder(stateCode);
+        sb.setCharAt(index, '1');  // 直接修改指定位置字符
+        return sb.toString();
     }
 }

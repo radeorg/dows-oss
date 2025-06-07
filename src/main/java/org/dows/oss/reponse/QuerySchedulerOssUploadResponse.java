@@ -23,6 +23,9 @@ public class QuerySchedulerOssUploadResponse {
     @Schema(description = "文件内容md5")
     private String fileMd5;
 
+    @Schema(description = "文本存储路径（业务系统告知）")
+    private String txtPath;
+
     @Schema(description = "状态码")
     private String stateCode;
 

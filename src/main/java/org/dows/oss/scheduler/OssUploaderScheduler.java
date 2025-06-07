@@ -4,7 +4,7 @@ import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.biz.OssFileHandleBiz;
-import org.dows.oss.constant.OssUploaderStateCodeConstant;
+import org.dows.oss.constant.OssUploaderConstant;
 import org.dows.oss.reponse.QuerySchedulerOssUploadResponse;
 import org.dows.oss.request.QuerySchedulerOssUploadRequest;
 import org.springframework.context.annotation.Bean;
@@ -67,7 +67,7 @@ public class OssUploaderScheduler {
     private QuerySchedulerOssUploadRequest buildRequest() {
         QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
         request.setStateCode("0"); // 第一位状态码为0代表未上传
-        request.setStateCodeType(OssUploaderStateCodeConstant.STATE_TYPE_LEFT_LIKE);
+        request.setStateCodeType(OssUploaderConstant.STATE_TYPE_LEFT_LIKE);
         request.setPageNum(currentPage.get());
         request.setPageSize(PAGE_SIZE);
         return request;

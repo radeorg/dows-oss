@@ -37,7 +37,7 @@ public class TencentOssRest implements TencentOssApi {
         return ossFileHandleBiz.uploadFileToLocal(files, ossUploadRequest);
     }
 
-    @Operation(summary = "上传文件至本地服务器（支持图片、文档）")
+    @Operation(summary = "回调测试")
     public void callbackTest(String callbackRequest) {
         System.out.println("回调成功：" + callbackRequest);
     }

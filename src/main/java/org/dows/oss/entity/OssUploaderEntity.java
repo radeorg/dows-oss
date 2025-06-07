@@ -36,8 +36,8 @@ public class OssUploaderEntity extends BaseEntity<OssUploaderEntity> {
     private Long accountInstanceId;
 
     @Schema(description = "文件存储路径（业务系统告知）")
-    @Column(value = "file_base_path")
-    private String fileBasePath;
+    @Column(value = "file_path")
+    private String filePath;
 
     @Schema(description = "文件上传到本地的临时路径，删除本地文件时需要")
     @Column(value = "file_temp_path")
@@ -59,17 +59,25 @@ public class OssUploaderEntity extends BaseEntity<OssUploaderEntity> {
     @Column(value = "file_ext")
     private String fileExt;
 
+    @Schema(description = "文件路径")
+    @Column(value = "file_base_path")
+    private String fileBasePath;
+
     @Schema(description = "文件全量路径")
     @Column(value = "file_link")
     private String fileLink;
 
+    @Schema(description = "文本存储路径（业务系统告知）")
+    @Column(value = "txt_path")
+    private String txtPath;
+
+    @Schema(description = "文本路径")
+    @Column(value = "txt_base_path")
+    private String txtBasePath;
+
     @Schema(description = "文本全量路径")
     @Column(value = "txt_link")
     private String txtLink;
-
-    @Schema(description = "文本存储路径（业务系统告知）")
-    @Column(value = "txt_base_path")
-    private String txtBasePath;
 
     @Schema(description = "过期时间，秒，传0代表无过期时间限制（过期自动删除本地文件）")
     @Column(value = "expire_time")

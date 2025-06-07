@@ -47,7 +47,7 @@ public class CallbackBizScheduler {
         try {
             while (true) {
                 QuerySchedulerOssUploadRequest request = buildRequest();
-                Page<CallbackBizResponse> page = ossFileHandleBiz.queryOssUploadFile(request);
+                Page<CallbackBizResponse> page = ossFileHandleBiz.queryWaitCallbackOssUploadFile(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());

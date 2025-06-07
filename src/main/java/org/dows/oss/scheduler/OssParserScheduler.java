@@ -3,20 +3,19 @@ package org.dows.oss.scheduler;
 import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.dows.oss.biz.OssFileHandleBiz;
-import org.dows.oss.constant.OssUploaderStateCodeConstant;
+import org.dows.oss.constant.OssUploaderConstant;
 import org.dows.oss.reponse.QuerySchedulerOssUploadResponse;
 import org.dows.oss.request.QuerySchedulerOssUploadRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiredArgsConstructor
 @Configuration
@@ -24,14 +23,10 @@ import java.util.concurrent.*;
 @Slf4j
 public class OssParserScheduler {
 
+    private final AtomicInteger currentPage = new AtomicInteger(1);
+    private static final int PAGE_SIZE = 100; // 5线程*10条/线程
+    private static final int EXECUTE_NUM = 20; // 每个线程执行的条数
     private final OssFileHandleBiz ossFileHandleBiz;
-    private boolean isDatabaseReady = false;
-
-    @EventListener(ContextRefreshedEvent.class)
-    public void onContextRefreshedEvent(ContextRefreshedEvent event) {
-        // 当应用上下文刷新完成，认为数据库连接已建立
-        isDatabaseReady = true;
-    }
 
     /**
      * 服务器文件解析至COS任务线程池,同时最大5个并发处理
@@ -42,55 +37,59 @@ public class OssParserScheduler {
         executor.setCorePoolSize(5);
         executor.setMaxPoolSize(5);
         executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("parse-worker-");
         executor.initialize();
         return executor;
     }
 
-    /**
-     * 执行周期性或定时任务线程池
-     */
-    @Bean(name = "parserScheduledExecutorService", destroyMethod = "shutdown")
-    protected ScheduledExecutorService scheduledExecutorService() {
-        return new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors() + 1,
-                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build(),
-                new ThreadPoolExecutor.CallerRunsPolicy()) {
-            @Override
-            protected void afterExecute(Runnable r, Throwable t) {
-                super.afterExecute(r, t);
-                if (t == null && r instanceof Future<?>) {
-                    try {
-                        Future<?> future = (Future<?>) r;
-                        if (future.isDone()) {
-                            future.get();
-                        }
-                    } catch (CancellationException ce) {
-                        t = ce;
-                    } catch (ExecutionException ee) {
-                        t = ee.getCause();
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-                if (t != null) {
-                    log.error(t.getMessage(), t);
-                }
+    @Scheduled(fixedRateString = "${dows.oss.scheduler.parser:30}",timeUnit = TimeUnit.MINUTES)
+    public void parseFileToCos() {
+        ThreadPoolTaskExecutor executor = parserTaskExecutor();
+        try {
+            while (true) {
+                QuerySchedulerOssUploadRequest request = buildRequest();
+                Page<QuerySchedulerOssUploadResponse> page = ossFileHandleBiz.queryLocalFile(request);
+
+                if (page.getRecords().isEmpty()) break;
+                processBatch(executor, page.getRecords());
+
+                if (!page.hasNext()) break;
+                currentPage.incrementAndGet();
             }
-        };
+        } catch (Exception e) {
+            log.error("删除过期文件调度异常", e);
+        } finally {
+            currentPage.set(1);
+        }
     }
 
-    @Scheduled(fixedRateString = "${dows.oss.scheduler.parser}",timeUnit = TimeUnit.MINUTES)
-    public void parseFileToCos() {
-//        if (isDatabaseReady) {
-//            try {
-//                QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
-//                request.setStateCode("_0"); // 第二位为0表示未解析
-//                request.setStateCodeType(OssUploaderStateCodeConstant.STATE_TYPE_RIGHT_LIKE);
-//                Page<QuerySchedulerOssUploadResponse> page = ossFileHandleBiz.queryLocalFile(request);
-//                ossFileHandleBiz.parseLocalFileToCos(page.getRecords());
-//            }catch (Exception e){
-//                log.error("解析文件至COS异常： " + e.getLocalizedMessage());
-//                e.printStackTrace();
-//            }
-//        }
+    private QuerySchedulerOssUploadRequest buildRequest() {
+        QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
+        request.setStateCode("_0"); // 第二位为0表示未解析
+        request.setStateCodeType(OssUploaderConstant.STATE_TYPE_LEFT_LIKE);
+        request.setTrigger(OssUploaderConstant.TRIGGER_OTT);
+        request.setPageNum(currentPage.get());
+        request.setPageSize(PAGE_SIZE);
+        return request;
+    }
+
+    private void processBatch(ThreadPoolTaskExecutor executor, List<QuerySchedulerOssUploadResponse> records)
+            throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch((int) Math.ceil((double) records.size() / EXECUTE_NUM));
+
+        for (int i = 0; i < records.size(); i += EXECUTE_NUM) {
+            int end = Math.min(i + EXECUTE_NUM, records.size());
+            List<QuerySchedulerOssUploadResponse> tempRecords = records.subList(i, end);
+            executor.execute(() -> {
+                try {
+                    ossFileHandleBiz.parseLocalFileToCos(tempRecords);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }finally {
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
     }
 }
