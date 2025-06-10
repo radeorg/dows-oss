@@ -40,7 +40,7 @@ public class FileParseUtil {
     /**
      * 解析文档并转为markdown格式
      */
-    public static String convertToMarkdown(String pdfPath) {
+    public static String convertToMarkdown(String pdfPath) throws IOException {
         StringBuilder content = new StringBuilder();
         try {
             PdfReader reader = new PdfReader(pdfPath);
@@ -52,7 +52,7 @@ public class FileParseUtil {
             return parseToMarkdown(content.toString());
         } catch (Exception e) {
             log.error("PDF解析失败", e);
-            return "";
+            throw e;
         }
     }
 

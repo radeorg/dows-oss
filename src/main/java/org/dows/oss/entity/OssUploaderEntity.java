@@ -87,16 +87,9 @@ public class OssUploaderEntity extends BaseEntity<OssUploaderEntity> {
     @Column(value = "expire_date")
     private Date expireDate;
 
-    /**
-     * 默认9个0，每位上的数字0代表未执行，1代表已执行；目前第一位代表上传，第二位代表解析，例：
-     * 000000000，该文件还未上传至COS，也未进行解析
-     * 100000000，该文件已上传至COS，但未进行解析
-     * 110000000，该文件已上传至COS，已进行解析
-     * 010000000，该文件还未上传至COS，但已 进行解析
-     */
-    @Schema(description = "状态码")
-    @Column(value = "state_code")
-    private String stateCode;
+    @Schema(description = "状态码（0待处理，1已完成）")
+    @Column(value = "state")
+    private Integer state;
 
     @Schema(description = "触发器（[解析、压缩]）")
     @Column(value = "trigger")

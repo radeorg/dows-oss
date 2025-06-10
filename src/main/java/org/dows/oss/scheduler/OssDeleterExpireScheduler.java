@@ -4,8 +4,9 @@ import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.biz.OssFileHandleBiz;
-import org.dows.oss.reponse.QuerySchedulerOssUploadResponse;
-import org.dows.oss.request.QuerySchedulerOssUploadRequest;
+import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
+import org.dows.oss.reponse.QueryWaitDeleteResponse;
+import org.dows.oss.request.QueryWaitDeleteRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -53,8 +54,8 @@ public class OssDeleterExpireScheduler {
         ThreadPoolTaskExecutor executor = deleterExpireTaskExecutor();
         try {
             while (true) {
-                QuerySchedulerOssUploadRequest request = buildRequest();
-                Page<QuerySchedulerOssUploadResponse> page = ossFileHandleBiz.queryLocalFile(request);
+                QueryWaitDeleteRequest request = buildRequest();
+                Page<QueryWaitDeleteResponse> page = ossFileHandleBiz.queryWaitDeleteFiles(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());
@@ -69,8 +70,9 @@ public class OssDeleterExpireScheduler {
         }
     }
 
-    private QuerySchedulerOssUploadRequest buildRequest() {
-        QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
+    private QueryWaitDeleteRequest buildRequest() {
+        QueryWaitDeleteRequest request = new QueryWaitDeleteRequest();
+        request.setState(OssUploaderStateCodeEnum.COMPLETE_HANDLE.getCode());
         request.setPageNum(currentPage.get());
         request.setPageSize(PAGE_SIZE);
         request.setStartTime(startTime);
@@ -78,13 +80,13 @@ public class OssDeleterExpireScheduler {
         return request;
     }
 
-    private void processBatch(ThreadPoolTaskExecutor executor, List<QuerySchedulerOssUploadResponse> records)
+    private void processBatch(ThreadPoolTaskExecutor executor, List<QueryWaitDeleteResponse> records)
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch((int) Math.ceil((double) records.size() / EXECUTE_NUM));
 
         for (int i = 0; i < records.size(); i += EXECUTE_NUM) {
             int end = Math.min(i + EXECUTE_NUM, records.size());
-            List<QuerySchedulerOssUploadResponse> tempRecords = records.subList(i, end);
+            List<QueryWaitDeleteResponse> tempRecords = records.subList(i, end);
             executor.execute(() -> {
                 try {
                     ossFileHandleBiz.deleteLocalFile(tempRecords);

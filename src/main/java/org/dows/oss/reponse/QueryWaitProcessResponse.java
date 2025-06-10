@@ -3,16 +3,14 @@ package org.dows.oss.reponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.Date;
-
 @Data
-public class QuerySchedulerOssUploadResponse {
+public class QueryWaitProcessResponse {
 
     @Schema(description = "文件上传ID")
     private Long ossUploaderId;
 
     @Schema(description = "文件存储路径（业务系统告知）")
-    private String fileBasePath;
+    private String filePath;
 
     @Schema(description = "文件上传到本地的临时路径，删除本地文件时需要")
     private String fileTempPath;
@@ -29,6 +27,7 @@ public class QuerySchedulerOssUploadResponse {
     @Schema(description = "状态码")
     private String stateCode;
 
-    @Schema(description = "过期时间")
-    private Date expireDate;
+    @Schema(description = "文件上传过程ID")
+    private Long ossUploaderProcessId;
+
 }

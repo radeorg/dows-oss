@@ -7,5 +7,6 @@ package org.dows.oss.constant;
 public class OssUploaderConstant {
     public final static String STATE_TYPE_EQ = "eq"; // 等于
     public final static String STATE_TYPE_LEFT_LIKE = "leftLike"; // 左模糊查询
-    public final static String TRIGGER_OTT = "ott"; // 文件解析
+    public final static String TRIGGER_OTT = "OTT"; // 文件解析
+    public final static String TRIGGER_UPLOAD = "UPLOAD"; // 文件上传
 }

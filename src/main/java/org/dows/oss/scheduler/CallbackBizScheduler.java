@@ -4,8 +4,10 @@ import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.biz.OssFileHandleBiz;
+import org.dows.oss.pojo.enums.OssUploaderCallBackStateEnum;
+import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
 import org.dows.oss.reponse.CallbackBizResponse;
-import org.dows.oss.request.QuerySchedulerOssUploadRequest;
+import org.dows.oss.request.QueryWaitCallbackRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -46,8 +48,8 @@ public class CallbackBizScheduler {
         ThreadPoolTaskExecutor executor = callbackBizTaskExecutor();
         try {
             while (true) {
-                QuerySchedulerOssUploadRequest request = buildRequest();
-                Page<CallbackBizResponse> page = ossFileHandleBiz.queryWaitCallbackOssUploadFile(request);
+                QueryWaitCallbackRequest request = buildRequest();
+                Page<CallbackBizResponse> page = ossFileHandleBiz.queryWaitCallbackFiles(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());
@@ -62,9 +64,10 @@ public class CallbackBizScheduler {
         }
     }
 
-    private QuerySchedulerOssUploadRequest buildRequest() {
-        QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
-        request.setCallbackState(0);
+    private QueryWaitCallbackRequest buildRequest() {
+        QueryWaitCallbackRequest request = new QueryWaitCallbackRequest();
+        request.setState(OssUploaderStateCodeEnum.COMPLETE_HANDLE.getCode());
+        request.setCallbackState(OssUploaderCallBackStateEnum.WAIT_CALLBACK.getCode());
         request.setPageNum(currentPage.get());
         request.setPageSize(PAGE_SIZE);
         return request;

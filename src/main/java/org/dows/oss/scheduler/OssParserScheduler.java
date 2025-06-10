@@ -5,8 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.biz.OssFileHandleBiz;
 import org.dows.oss.constant.OssUploaderConstant;
-import org.dows.oss.reponse.QuerySchedulerOssUploadResponse;
-import org.dows.oss.request.QuerySchedulerOssUploadRequest;
+import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
+import org.dows.oss.reponse.QueryWaitProcessResponse;
+import org.dows.oss.request.QueryWaitProcessRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -47,8 +48,8 @@ public class OssParserScheduler {
         ThreadPoolTaskExecutor executor = parserTaskExecutor();
         try {
             while (true) {
-                QuerySchedulerOssUploadRequest request = buildRequest();
-                Page<QuerySchedulerOssUploadResponse> page = ossFileHandleBiz.queryLocalFile(request);
+                QueryWaitProcessRequest request = buildRequest();
+                Page<QueryWaitProcessResponse> page = ossFileHandleBiz.queryWaitProcessFiles(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());
@@ -63,23 +64,22 @@ public class OssParserScheduler {
         }
     }
 
-    private QuerySchedulerOssUploadRequest buildRequest() {
-        QuerySchedulerOssUploadRequest request = new QuerySchedulerOssUploadRequest();
-        request.setStateCode("_0"); // 第二位为0表示未解析
-        request.setStateCodeType(OssUploaderConstant.STATE_TYPE_LEFT_LIKE);
+    private QueryWaitProcessRequest buildRequest() {
+        QueryWaitProcessRequest request = new QueryWaitProcessRequest();
+        request.setState(OssUploaderStateCodeEnum.WAIT_HANDLE.getCode());
         request.setTrigger(OssUploaderConstant.TRIGGER_OTT);
         request.setPageNum(currentPage.get());
         request.setPageSize(PAGE_SIZE);
         return request;
     }
 
-    private void processBatch(ThreadPoolTaskExecutor executor, List<QuerySchedulerOssUploadResponse> records)
+    private void processBatch(ThreadPoolTaskExecutor executor, List<QueryWaitProcessResponse> records)
             throws InterruptedException {
         CountDownLatch latch = new CountDownLatch((int) Math.ceil((double) records.size() / EXECUTE_NUM));
 
         for (int i = 0; i < records.size(); i += EXECUTE_NUM) {
             int end = Math.min(i + EXECUTE_NUM, records.size());
-            List<QuerySchedulerOssUploadResponse> tempRecords = records.subList(i, end);
+            List<QueryWaitProcessResponse> tempRecords = records.subList(i, end);
             executor.execute(() -> {
                 try {
                     ossFileHandleBiz.parseLocalFileToCos(tempRecords);
