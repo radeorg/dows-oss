@@ -34,5 +34,5 @@ public class OssUploadRequest {
     private String callbackUrl;
 
     @Schema(description = "过期时间，秒，到期会删除临时文件")
-    private Long expireTime;
+    private long expireTime;
 }
