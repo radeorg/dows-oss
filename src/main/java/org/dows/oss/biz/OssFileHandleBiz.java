@@ -386,6 +386,7 @@ public class OssFileHandleBiz {
         OssUploaderProcessEntity processEntity = new OssUploaderProcessEntity();
         processEntity.setOssUploaderProcessId(ossUploaderProcessId);
         processEntity.setState(OssUploaderStateCodeEnum.FAILED_HANDLE.getCode());
+        processEntity.setFailedReason(failedReason);
         ossUploaderProcessService.updateById(processEntity);
     }
 }
