@@ -3,7 +3,7 @@ package org.dows.oss.scheduler;
 import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.biz.OssFileHandleBiz;
+import org.dows.oss.biz.OssFileBiz;
 import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
 import org.dows.oss.reponse.QueryWaitDeleteResponse;
 import org.dows.oss.request.QueryWaitDeleteRequest;
@@ -29,7 +29,7 @@ public class OssDeleterExpireScheduler {
     private static final int EXECUTE_NUM = 20; // 每个线程执行的条数
     private Date startTime;
     private Date endTime;
-    private final OssFileHandleBiz ossFileHandleBiz;
+    private final OssFileBiz ossFileBiz;
 
     /**
      * 删除过期服务器文件任务线程池,同时最大5个并发处理
@@ -55,7 +55,7 @@ public class OssDeleterExpireScheduler {
         try {
             while (true) {
                 QueryWaitDeleteRequest request = buildRequest();
-                Page<QueryWaitDeleteResponse> page = ossFileHandleBiz.queryWaitDeleteFiles(request);
+                Page<QueryWaitDeleteResponse> page = ossFileBiz.queryWaitDeleteFiles(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());
@@ -89,7 +89,7 @@ public class OssDeleterExpireScheduler {
             List<QueryWaitDeleteResponse> tempRecords = records.subList(i, end);
             executor.execute(() -> {
                 try {
-                    ossFileHandleBiz.deleteLocalFile(tempRecords);
+                    ossFileBiz.deleteLocalFile(tempRecords);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }finally {

@@ -1,12 +1,12 @@
 package org.dows.oss.biz;
 
 import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryChain;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssUploaderEntity;
 import org.dows.oss.entity.OssUploaderProcessEntity;
+import org.dows.oss.handler.OssFileHandler;
 import org.dows.oss.pojo.enums.OssUploaderCallBackStateEnum;
 import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
 import org.dows.oss.reponse.CallbackBizResponse;
@@ -20,16 +20,11 @@ import org.dows.oss.service.OssUploaderProcessService;
 import org.dows.oss.service.OssUploaderService;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.oss.utils.FileParseUtil;
-import org.dows.rade.aac.AacUser;
 import org.dows.rade.oss.OssInfo;
 import org.dows.rade.oss.tencent.TencentOssClient;
-import org.dows.rade.status.AuthStatusCode;
 import org.dows.rade.util.JsonUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.CredentialsExpiredException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,7 +35,7 @@ import java.util.*;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OssFileHandleBiz {
+public class OssFileBiz {
 
     @Value("${rade.oss.modulePath.uim:/uim}")
     private String orgImgPath;
@@ -50,6 +45,7 @@ public class OssFileHandleBiz {
     private final TencentOssClient tencentOssClient;
     private final OssUploaderService ossUploaderService;
     private final OssUploaderProcessService ossUploaderProcessService;
+    private final OssFileHandler ossFileHandler;
 
     /**
      * 上传图片到COS
@@ -87,10 +83,11 @@ public class OssFileHandleBiz {
         Map<Long, String> failInfo = new HashMap<>();
         List<String> distinctMd5s = new ArrayList<>();
         OssUploadRequest ossUploadRequest = JsonUtil.toObject(request, OssUploadRequest.class);
-        List<String> ossUploadFileMd5s = getOssUploaderFileMd5(ossUploadRequest);
+        List<String> existUploaderFileMd5 = ossFileHandler.queryExistUploaderFileMd5(ossUploadRequest);
         for (MultipartFile file : files) {
-            String md5 = ossUploadRequest.getMd5s().get(idx);
-            if (!distinctMd5s.contains(md5) && !ossUploadFileMd5s.contains(md5)) {
+            OssUploadRequest.OssUploadFileInfo info = ossUploadRequest.getFileInfos().get(idx);
+            String md5 = info.getMd5();
+            if (!distinctMd5s.contains(md5) && !existUploaderFileMd5.contains(md5)) {
                 String fileName = getFileName(file);
                 String filePath = System.getProperty("user.home")
                         + orgPath + File.separator
@@ -112,10 +109,10 @@ public class OssFileHandleBiz {
                     if (dest.exists() && !dest.delete()) {
                         log.error("文件删除失败: {}", dest.getAbsolutePath());
                     }
-                    failInfo.put(ossUploadRequest.getBizIds().get(idx), e.getMessage());
+                    failInfo.put(info.getBizId(), e.getMessage());
                 }
             } else {
-                failInfo.put(ossUploadRequest.getBizIds().get(idx), "文件重复");
+                failInfo.put(info.getBizId(), "文件重复");
             }
             if (!distinctMd5s.contains(md5)) {
                 distinctMd5s.add(md5);
@@ -151,7 +148,9 @@ public class OssFileHandleBiz {
                     entity.setOssUploaderId(response.getOssUploaderId());
                     entity.setFileLink(info.getFileLink());
                     entity.setFileBasePath(info.getFilePath());
-                    if (getWaitProcessFileByOssUploaderId(response.getOssUploaderId()) == null) {
+
+                    OssUploaderEntity ossUploaderEntity = ossFileHandler.getWaitProcessFileByOssUploaderId(response.getOssUploaderId());
+                    if (ossUploaderEntity == null) {
                         // 没有待处理的状态，则更新为已完成
                         entity.setState(OssUploaderStateCodeEnum.COMPLETE_HANDLE.getCode());
                     }
@@ -185,7 +184,8 @@ public class OssFileHandleBiz {
                     entity.setOssUploaderId(response.getOssUploaderId());
                     entity.setTxtLink(info.getFileLink());
                     entity.setTxtBasePath(info.getFilePath());
-                    if (getWaitProcessFileByOssUploaderId(response.getOssUploaderId()) == null) {
+                    OssUploaderEntity ossUploaderEntity = ossFileHandler.getWaitProcessFileByOssUploaderId(response.getOssUploaderId());
+                    if (ossUploaderEntity == null) {
                         // 没有待处理的状态，则更新为已完成
                         entity.setState(OssUploaderStateCodeEnum.COMPLETE_HANDLE.getCode());
                     }
@@ -224,57 +224,6 @@ public class OssFileHandleBiz {
     }
 
     /**
-     * 查询待处理的文件
-     */
-    public Page<QueryWaitProcessResponse> queryWaitProcessFiles(QueryWaitProcessRequest request){
-        Page<QueryWaitProcessResponse> page = new Page<>(
-                Long.valueOf(request.getPageNum()),
-                Long.valueOf(request.getPageSize())
-        );
-        return QueryChain.of(OssUploaderEntity.class)
-                .innerJoin(OssUploaderProcessEntity.class)
-                .on(OssUploaderEntity::getOssUploaderId, OssUploaderProcessEntity::getOssUploaderId)
-                .eq(OssUploaderProcessEntity::getState, request.getState())
-                .eq(OssUploaderProcessEntity::getTrigger, request.getTrigger())
-                .orderBy(OssUploaderEntity::getUt)
-                .asc()
-                .pageAs(page, QueryWaitProcessResponse.class);
-    }
-
-    /**
-     * 查询待回调文件
-     */
-    public Page<CallbackBizResponse> queryWaitCallbackFiles(QueryWaitCallbackRequest request){
-        Page<CallbackBizResponse> page = new Page<>(
-                Long.valueOf(request.getPageNum()),
-                Long.valueOf(request.getPageSize())
-        );
-        return QueryChain.of(OssUploaderEntity.class)
-                        .eq(OssUploaderEntity::getCallbackState, request.getCallbackState())
-                        .eq(OssUploaderEntity::getState, request.getState())
-                        .orderBy(OssUploaderEntity::getUt)
-                        .asc()
-                        .pageAs(page, CallbackBizResponse.class);
-
-    }
-
-    /**
-     * 查询待删除的文件
-     */
-    public Page<QueryWaitDeleteResponse> queryWaitDeleteFiles(QueryWaitDeleteRequest request){
-        Page<QueryWaitDeleteResponse> page = new Page<>(
-                Long.valueOf(request.getPageNum()),
-                Long.valueOf(request.getPageSize())
-        );
-        return QueryChain.of(OssUploaderEntity.class)
-                .ge(OssUploaderEntity::getExpireDate, request.getStartTime(), request.getStartTime() != null)
-                .le(OssUploaderEntity::getExpireDate, request.getEndTime(), request.getEndTime() != null)
-                .orderBy(OssUploaderEntity::getUt)
-                .asc()
-                .pageAs(page, QueryWaitDeleteResponse.class);
-    }
-
-    /**
      * 删除本地文件
      */
     public void deleteLocalFile(List<QueryWaitDeleteResponse> responses){
@@ -295,6 +244,28 @@ public class OssFileHandleBiz {
         }
     }
 
+    /**
+     * 查询待处理的文件
+     */
+    public Page<QueryWaitProcessResponse> queryWaitProcessFiles(QueryWaitProcessRequest request){
+        return ossFileHandler.queryWaitProcessFiles(request);
+    }
+
+    /**
+     * 查询待回调文件
+     */
+    public Page<CallbackBizResponse> queryWaitCallbackFiles(QueryWaitCallbackRequest request){
+        return ossFileHandler.queryWaitCallbackFiles(request);
+
+    }
+
+    /**
+     * 查询待删除的文件
+     */
+    public Page<QueryWaitDeleteResponse> queryWaitDeleteFiles(QueryWaitDeleteRequest request){
+        return ossFileHandler.queryWaitDeleteFiles(request);
+    }
+
     private String getFileName(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("文件不能为空");
@@ -313,25 +284,13 @@ public class OssFileHandleBiz {
         }
     }
 
-    private List<String> getOssUploaderFileMd5(OssUploadRequest ossUploadRequest){
-        List<String> fileMd5s = new ArrayList<>();
-        List<OssUploaderEntity> ossUploaderEntities = QueryChain.of(OssUploaderEntity.class)
-                .in(OssUploaderEntity::getFileMd5, ossUploadRequest.getMd5s()).list();
-        if (ossUploaderEntities != null && !ossUploaderEntities.isEmpty()) {
-            for (OssUploaderEntity ossUploaderEntity : ossUploaderEntities) {
-                fileMd5s.add(ossUploaderEntity.getFileMd5());
-            }
-        }
-        return fileMd5s;
-    }
-
     private void saveOssUploader(OssUploadRequest ossUploadRequest, String filePath, String fileName, File dest, int idx){
         OssUploaderEntity ossUploaderEntity = new OssUploaderEntity();
-        ossUploaderEntity.setBizId(ossUploadRequest.getBizIds().get(idx));
-        ossUploaderEntity.setAccountInstanceId(getAccountInstanceId());
+        ossUploaderEntity.setBizId(ossUploadRequest.getFileInfos().get(idx).getBizId());
+        ossUploaderEntity.setAccountInstanceId(ossFileHandler.getAccountInstanceId());
         ossUploaderEntity.setFileTempPath(filePath);
         ossUploaderEntity.setFileName(fileName);
-        ossUploaderEntity.setFileMd5(ossUploadRequest.getMd5s().get(idx));
+        ossUploaderEntity.setFileMd5(ossUploadRequest.getFileInfos().get(idx).getMd5());
         ossUploaderEntity.setFileExt(fileName.substring(fileName.lastIndexOf(".")));
         ossUploaderEntity.setFileSize(dest.length());
         ossUploaderEntity.setFilePath(ossUploadRequest.getFilePath());
@@ -354,25 +313,6 @@ public class OssFileHandleBiz {
         entity.setAccountInstanceId(ossUploaderEntity.getAccountInstanceId());
         entity.setTrigger(trigger);
         ossUploaderProcessService.save(entity);
-    }
-
-    private Long getAccountInstanceId (){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof String) {
-            throw new CredentialsExpiredException(AuthStatusCode.UNAUTHORIZED.getDescribe());
-        }
-        AacUser aacUser = (AacUser) principal;
-        return aacUser.getAccountId();
-    }
-
-    private OssUploaderEntity getWaitProcessFileByOssUploaderId(Long ossUploaderId){
-        return QueryChain.of(OssUploaderEntity.class)
-                .innerJoin(OssUploaderProcessEntity.class)
-                .on(OssUploaderEntity::getOssUploaderId, OssUploaderProcessEntity::getOssUploaderId)
-                .eq(OssUploaderEntity::getOssUploaderId, ossUploaderId)
-                .eq(OssUploaderProcessEntity::getState, OssUploaderStateCodeEnum.WAIT_HANDLE.getCode())
-                .one();
     }
 
     private void updateOssUploaderProcessSuccess(Long ossUploaderProcessId){

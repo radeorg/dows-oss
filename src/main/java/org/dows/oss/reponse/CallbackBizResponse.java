@@ -21,14 +21,23 @@ public class CallbackBizResponse {
     @Schema(description = "触发器（[解析、压缩]）")
     private String trigger;
 
+    @Schema(description = "文件名")
+    private String fileName;
+
     @Schema(description = "文件内容md5")
     private String fileMd5;
 
     @Schema(description = "文件全量路径")
     private String fileLink;
 
+    @Schema(description = "文件路径")
+    private String fileBasePath;
+
     @Schema(description = "文本全量路径")
     private String txtLink;
+
+    @Schema(description = "文本路径")
+    private String txtBasePath;
 
     @Schema(description = "文件大小")
     private Long fileSize;

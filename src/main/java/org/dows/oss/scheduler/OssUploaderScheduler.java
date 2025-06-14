@@ -3,7 +3,7 @@ package org.dows.oss.scheduler;
 import com.mybatisflex.core.paginate.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.biz.OssFileHandleBiz;
+import org.dows.oss.biz.OssFileBiz;
 import org.dows.oss.constant.OssUploaderConstant;
 import org.dows.oss.pojo.enums.OssUploaderStateCodeEnum;
 import org.dows.oss.reponse.QueryWaitProcessResponse;
@@ -28,7 +28,7 @@ public class OssUploaderScheduler {
     private final AtomicInteger currentPage = new AtomicInteger(1);
     private static final int PAGE_SIZE = 100; // 5线程*10条/线程
     private static final int EXECUTE_NUM = 20; // 每个线程执行的条数
-    private final OssFileHandleBiz ossFileHandleBiz;
+    private final OssFileBiz ossFileBiz;
 
     /**
      * 服务器文件上传至COS任务线程池,同时最大5个并发处理
@@ -50,7 +50,7 @@ public class OssUploaderScheduler {
         try {
             while (true) {
                 QueryWaitProcessRequest request = buildRequest();
-                Page<QueryWaitProcessResponse> page = ossFileHandleBiz.queryWaitProcessFiles(request);
+                Page<QueryWaitProcessResponse> page = ossFileBiz.queryWaitProcessFiles(request);
 
                 if (page.getRecords().isEmpty()) break;
                 processBatch(executor, page.getRecords());
@@ -83,7 +83,7 @@ public class OssUploaderScheduler {
             List<QueryWaitProcessResponse> tempRecords = records.subList(i, end);
             executor.execute(() -> {
                 try {
-                    ossFileHandleBiz.uploadLocalFileToCos(tempRecords);
+                    ossFileBiz.uploadLocalFileToCos(tempRecords);
                 } catch (FileNotFoundException e) {
                     throw new RuntimeException(e);
                 }finally {

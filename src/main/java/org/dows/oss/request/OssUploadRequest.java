@@ -9,11 +9,8 @@ import java.util.List;
 @Schema(name = "oss上传对象")
 public class OssUploadRequest {
 
-    @Schema(description = "业务系统唯一标识ID")
-    private List<Long> bizIds;
-
-    @Schema(description = "文件内容加密后的数据")
-    private List<String> md5s;
+    @Schema(description = "文件信息")
+    private List<OssUploadFileInfo> fileInfos;
 
     @Schema(description = "上传到什么平台，例：COS")
     private String channel;
@@ -35,4 +32,14 @@ public class OssUploadRequest {
 
     @Schema(description = "过期时间，秒，到期会删除临时文件")
     private long expireTime;
+
+    @Data
+    public static class OssUploadFileInfo {
+
+        @Schema(description = "业务系统唯一标识ID")
+        private Long bizId;
+
+        @Schema(description = "文件内容加密后的数据")
+        private String md5;
+    }
 }
