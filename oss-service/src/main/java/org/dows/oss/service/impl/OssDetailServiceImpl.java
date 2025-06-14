@@ -1,6 +1,7 @@
 package org.dows.oss.service.impl;
 
 
+import org.dows.rade.crud.BaseServiceImpl;
 import org.springframework.stereotype.Service;
 import org.dows.oss.service.OssDetailService;
 import org.dows.oss.entity.OssDetailEntity;
