@@ -24,6 +24,7 @@ public class FileUploader {
 
     private final OssTriggerHandler ossTriggerHandler;
 
+
     /**
      * 文件上传器
      *
@@ -39,7 +40,7 @@ public class FileUploader {
         for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
             FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
             fileUploadTaskExecutor.execute(() -> {
-                fileTrigger.trigger(object);
+                fileTrigger.trigger(object, ossTriggerEntity);
             });
         }
 

@@ -1,22 +1,18 @@
 package org.dows.oss.entity;
 
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
-import io.swagger.v3.oas.annotations.media.Schema;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
-import com.mybatisflex.core.keygen.KeyGenerators;
 import com.mybatisflex.annotation.Table;
-
-import java.lang.Long;
-import java.util.Date;
-import java.lang.String;
-import java.lang.Integer;
-
+import com.mybatisflex.core.keygen.KeyGenerators;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.dows.rade.crud.BaseEntity;
+
+import java.util.Date;
 
 /**
  * 实体类。
@@ -54,11 +50,17 @@ public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
     private String trigger;
 
     /**
-     * 回调业务系统路径
+     * 回调
      */
-    @Schema(description = "回调业务系统路径")
-    @Column(value = "callback_url")
-    private String callbackUrl;
+//    @Schema(description = "回调")
+//    @Column(value = "callback")
+//    private String callback;
+
+
+    @Schema(description = "回调目标[bean://pkg.class#method,http://url,jdbc://sql...]")
+    @Column(value = "callback_target")
+    private String callbackTarget;
+
 
     /**
      * 应用ID
