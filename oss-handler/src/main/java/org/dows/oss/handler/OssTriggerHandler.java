@@ -4,6 +4,7 @@ package org.dows.oss.handler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.service.OssIdentifierService;
 import org.dows.oss.service.OssTriggerService;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OssTriggerHandler {
 
+    private final OssIdentifierService ossIdentifierService;
     private final OssTriggerService ossTriggerService;
 
 
