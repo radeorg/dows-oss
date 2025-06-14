@@ -16,6 +16,7 @@
             <groupId>org.dows.cloud</groupId>
             <artifactId>oss-service</artifactId>
         </dependency>
+
     </dependencies>
 
 
