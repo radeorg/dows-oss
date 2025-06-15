@@ -58,8 +58,8 @@ public class OssIdentifierEntity extends BaseEntity<OssIdentifierEntity> {
      * 密钥KEY
      */
     @Schema(description = "密钥KEY")
-    @Column(value = "sectet_key")
-    private String sectetKey;
+    @Column(value = "secret_key")
+    private String secretKey;
 
     /**
      * 存储通道[cos,oss,qiniu]
