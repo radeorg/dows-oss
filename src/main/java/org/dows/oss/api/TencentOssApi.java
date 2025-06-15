@@ -50,5 +50,5 @@ public interface TencentOssApi {
      * 回调测试接口
      */
     @PostMapping("/v1/open/oss/test/callback")
-    void callbackTest(@RequestParam String callbackRequest,@RequestParam Long ossDetailId);
+    void callbackTest(@RequestParam String callbackRequest);
 }
