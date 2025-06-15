@@ -10,6 +10,9 @@ public class OssUploadInputStreamRequest {
     @Schema(description = "上传来源（uim/acc/hrm）")
     private String source;
 
+    @Schema(description = "秘钥Id")
+    private String secretId;
+
     @Schema(description = "秘钥")
     private String secretKey;
 

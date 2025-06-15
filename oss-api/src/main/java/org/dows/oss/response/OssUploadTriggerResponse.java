@@ -2,9 +2,6 @@ package org.dows.oss.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Data
 public class OssUploadTriggerResponse {
@@ -12,8 +9,8 @@ public class OssUploadTriggerResponse {
     @Schema(description = "文件上传ID")
     private Long ossUploaderId;
 
-    @Schema(description = "文件触发ID")
-    private Long ossTriggerId;
+    @Schema(description = "文件触发详情ID")
+    private Long ossDetailId;
 
     @Schema(description = "应用ID")
     private Long appId;

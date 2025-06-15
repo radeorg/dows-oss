@@ -13,8 +13,11 @@ public class OssUploadRequest {
     @Schema(description = "上传来源（uim/acc/hrm）")
     private String source;
 
+    @Schema(description = "秘钥Id")
+    private String secretId;
+
     @Schema(description = "秘钥")
-    private String key;
+    private String secretKey;
 
     @Schema(description = "文件信息")
     private List<OssUploadInfo> infos;
