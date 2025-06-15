@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.callback.FileCallback;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.handler.OssUploader;
+import org.dows.oss.service.OssFileService;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -21,9 +22,13 @@ public class FileUploadedTrigger implements FileTrigger {
 
     private final OssUploader ossUploader;
 
-    @Override
-    public void trigger(Object object, OssTriggerEntity ossTriggerEntity) {
+    private final OssFileService ossFileService;
 
+    @Override
+    public void trigger(Long ossFileId, Object object, OssTriggerEntity ossTriggerEntity) {
+
+        //ossFileService.query().eq(OssFileEntity::getOssUploaderId, ossTriggerEntity.getOssUploaderId())
+        //Long ossFileId = null;
         //todo 处理object 上传
         ossUploader.upload(object);
         // todo 触发

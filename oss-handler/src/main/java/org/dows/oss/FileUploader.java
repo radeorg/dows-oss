@@ -40,7 +40,7 @@ public class FileUploader {
         for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
             FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
             fileUploadTaskExecutor.execute(() -> {
-                fileTrigger.trigger(object, ossTriggerEntity);
+                //fileTrigger.trigger(object, ossTriggerEntity);
             });
         }
 

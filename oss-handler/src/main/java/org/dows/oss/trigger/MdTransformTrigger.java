@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class MdTransformTrigger implements FileTrigger {
 
     @Override
-    public void trigger(Object object, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(Long ossFileId, Object object, OssTriggerEntity ossTriggerEntity) {
 
     }
 }
