@@ -43,7 +43,7 @@ public interface TencentOssApi {
      * @param ossFilePath 业务系统请求的参数
      */
     @PostMapping("/v1/open/oss/downContent")
-    String downContent( @RequestParam String ossFilePath);
+    String downContent( @RequestParam String ossFilePath,@RequestParam Long ossDetailId);
 
 
     /**
