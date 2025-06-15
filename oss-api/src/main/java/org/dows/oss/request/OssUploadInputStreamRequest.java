@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Schema(name = "oss上传对象")
-public class OssUploadRequest {
+public class OssUploadInputStreamRequest {
 
     @Schema(description = "上传来源（uim/acc/hrm）")
     private String source;
@@ -16,16 +16,9 @@ public class OssUploadRequest {
     @Schema(description = "秘钥")
     private String key;
 
-    @Schema(description = "文件信息")
-    private List<OssUploadInfo> infos;
+    @Schema(description = "md5")
+    private String md5;
 
-    @Data
-    public static class OssUploadInfo {
-
-        @Schema(description = "md5")
-        private String md5;
-
-        @Schema(description = "文件")
-        MultipartFile file;
-    }
+    @Schema(description = "文件名")
+    private String fileName;
 }
