@@ -16,6 +16,7 @@ import java.util.Date;
 import java.lang.String;
 import java.lang.Integer;
 
+import org.dows.oss.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 /**
@@ -28,8 +29,8 @@ import org.dows.rade.crud.BaseEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(name = "$table.comment")
-@Table(value = "oss_file")
+@Schema(name = "文件表")
+@Table(value = "oss_file", onUpdate = AutoFillDataListener.class, onInsert = AutoFillDataListener.class)
 public class OssFileEntity extends BaseEntity<OssFileEntity> {
 
     /**
@@ -113,7 +114,7 @@ public class OssFileEntity extends BaseEntity<OssFileEntity> {
      * 版本号，默认0
      */
     @Schema(description = "版本号，默认0")
-    @Column(value = "ver")
+    @Column(value = "ver", onUpdateValue = "ver+1")
     private Integer ver;
 
     /**

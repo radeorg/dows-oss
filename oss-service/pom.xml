@@ -14,8 +14,25 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.dows.cloud</groupId>
+            <artifactId>oss-api</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.dows.framework</groupId>
             <artifactId>rade-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tangzc</groupId>
+            <artifactId>mybatis-flex-ext-spring-boot3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-authorization-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
         </dependency>
 
     </dependencies>

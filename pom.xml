@@ -27,23 +27,8 @@
         <dows-hrm.version>1.0.0-SNAPSHOT</dows-hrm.version>
         <aac.version>1.0.0-SNAPSHOT</aac.version>
         <mybatis-flex.ext.version>1.10.8.110</mybatis-flex.ext.version>
-        <jdk.version>21</jdk.version>
-        <!--<spring-cloud-dependencies.version>2024.0.0</spring-cloud-dependencies.version>-->
-        <!--<springdoc-openapi.version>2.6.0</springdoc-openapi.version>-->
-        <!--<swagger.version>2.2.28</swagger.version>-->
-        <!--
-                <springdoc-openapi.version>2.8.6</springdoc-openapi.version>
-                <swagger.version>2.2.28</swagger.version>-->
+        <jdk.version>23</jdk.version>
     </properties>
-
-
-    <!--<modules>
-        <module>oss-api</module>
-        <module>oss-boot</module>
-        <module>oss-config</module>
-        <module>oss-service</module>
-        <module>oss-rest</module>
-    </modules>-->
 
     <dependencies>
         <dependency>
@@ -66,13 +51,11 @@
                 <version>${project.version}</version>
             </dependency>
 
-
             <dependency>
                 <artifactId>oss-boot</artifactId>
                 <groupId>org.dows.cloud</groupId>
                 <version>${project.version}</version>
             </dependency>
-
 
             <dependency>
                 <artifactId>oss-config</artifactId>
@@ -86,18 +69,11 @@
                 <version>${project.version}</version>
             </dependency>
 
-
             <dependency>
                 <artifactId>oss-rest</artifactId>
                 <groupId>org.dows.cloud</groupId>
                 <version>${project.version}</version>
             </dependency>
-
-            <!--            <dependency>-->
-            <!--                <groupId>org.dows.cloud</groupId>-->
-            <!--                <artifactId>hrm-feign</artifactId>-->
-            <!--                <version>${dows-hrm.version}</version>-->
-            <!--            </dependency>-->
 
             <dependency>
                 <groupId>org.aspectj</groupId>
@@ -105,12 +81,6 @@
                 <version>${aspectj.version}</version>
             </dependency>
 
-
-            <!--            <dependency>-->
-            <!--                <groupId>com.tangzc</groupId>-->
-            <!--                <artifactId>mybatis-flex-ext-spring-boot3-starter</artifactId>-->
-            <!--                <version>${mybatis-flex.ext.version}</version>-->
-            <!--            </dependency>-->
         </dependencies>
     </dependencyManagement>
 

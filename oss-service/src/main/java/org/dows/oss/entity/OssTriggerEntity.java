@@ -6,10 +6,8 @@ import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
 import com.mybatisflex.core.keygen.KeyGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.dows.oss.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 import java.util.Date;
@@ -20,12 +18,13 @@ import java.util.Date;
  * @author lait.zhang@gmail.com
  * @since 1.0
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(name = "$table.comment")
-@Table(value = "oss_trigger")
+@Schema(name = "文件触发器表")
+@Table(value = "oss_trigger", onUpdate = AutoFillDataListener.class, onInsert = AutoFillDataListener.class)
 public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
 
     /**
@@ -50,17 +49,18 @@ public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
     private String trigger;
 
     /**
-     * 回调
+     * 回调目标
      */
-//    @Schema(description = "回调")
-//    @Column(value = "callback")
-//    private String callback;
-
-
     @Schema(description = "回调目标[bean://pkg.class#method,http://url,jdbc://sql...]")
     @Column(value = "callback_target")
     private String callbackTarget;
 
+    /**
+     * 文件过期时间
+     */
+    @Schema(description = "文件过期时间")
+    @Column(value = "expire_time")
+    private Long expireTime;
 
     /**
      * 应用ID
@@ -73,7 +73,7 @@ public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
      * 版本号，默认0
      */
     @Schema(description = "版本号，默认0")
-    @Column(value = "ver")
+    @Column(value = "ver", onUpdateValue = "ver+1")
     private Integer ver;
 
     /**
@@ -96,6 +96,4 @@ public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
     @Schema(description = "最后更新时间")
     @Column(value = "ut")
     private Date ut;
-
-
 }

@@ -16,6 +16,7 @@ import java.util.Date;
 import java.lang.String;
 import java.lang.Integer;
 
+import org.dows.oss.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 /**
@@ -28,8 +29,8 @@ import org.dows.rade.crud.BaseEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(name = "$table.comment")
-@Table(value = "oss_identifier")
+@Schema(name = "文件标识表")
+@Table(value = "oss_identifier", onUpdate = AutoFillDataListener.class, onInsert = AutoFillDataListener.class)
 public class OssIdentifierEntity extends BaseEntity<OssIdentifierEntity> {
 
     /**
@@ -38,6 +39,13 @@ public class OssIdentifierEntity extends BaseEntity<OssIdentifierEntity> {
     @Schema(description = "账号标识ID")
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private Long ossIdentifierId;
+
+    /**
+     * 来源
+     */
+    @Schema(description = "来源（uim/hrm...)")
+    @Column(value = "source")
+    private String source;
 
     /**
      * 密钥ID

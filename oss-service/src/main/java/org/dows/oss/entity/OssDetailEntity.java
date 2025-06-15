@@ -1,9 +1,6 @@
 package org.dows.oss.entity;
 
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
@@ -16,6 +13,7 @@ import java.util.Date;
 import java.lang.String;
 import java.lang.Integer;
 
+import org.dows.oss.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 /**
@@ -24,12 +22,13 @@ import org.dows.rade.crud.BaseEntity;
  * @author lait.zhang@gmail.com
  * @since 1.0
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(name = "$table.comment")
-@Table(value = "oss_detail")
+@Schema(name = "文件详情表")
+@Table(value = "oss_detail", onUpdate = AutoFillDataListener.class, onInsert = AutoFillDataListener.class)
 public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
 
     /**
@@ -127,7 +126,7 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
      * 版本号，默认0
      */
     @Schema(description = "版本号，默认0")
-    @Column(value = "ver")
+    @Column(value = "ver", onUpdateValue = "ver+1")
     private Integer ver;
 
     /**
@@ -150,6 +149,4 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
     @Schema(description = "最后更新时间")
     @Column(value = "ut")
     private Date ut;
-
-
 }
