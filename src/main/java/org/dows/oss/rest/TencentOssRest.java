@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.api.TencentOssApi;
 import org.dows.oss.biz.OssFileBiz;
 import org.dows.rade.oss.OssInfo;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,6 +37,16 @@ public class TencentOssRest implements TencentOssApi {
     @Operation(summary = "上传文件至本地服务器（支持图片、文档）")
     public Map<String, Object> uploads(MultipartFile[] files, String ossUploadRequest) {
         return ossFileBiz.uploadFileToLocal(files, ossUploadRequest);
+    }
+
+    /**
+     * 下载文件解析内容
+     * @param ossFilePath 业务系统请求的参数
+     */
+
+    @Operation(summary = "下载文件解析内容")
+    public String downContent( String ossFilePath,Long ossDetailId){
+        return ossFileBiz.downContent(ossFilePath,ossDetailId);
     }
 
     @Operation(summary = "回调测试")

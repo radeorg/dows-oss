@@ -39,8 +39,16 @@ public interface TencentOssApi {
     Map<String, Object> uploads(MultipartFile[] files, @RequestParam String ossUploadRequest);
 
     /**
+     * 下载文件解析内容
+     * @param ossFilePath 业务系统请求的参数
+     */
+    @PostMapping("/v1/open/oss/downContent")
+    String downContent( @RequestParam String ossFilePath);
+
+
+    /**
      * 回调测试接口
      */
     @PostMapping("/v1/open/oss/test/callback")
-    void callbackTest(@RequestParam String callbackRequest);
+    void callbackTest(@RequestParam String callbackRequest,@RequestParam Long ossDetailId);
 }
