@@ -10,7 +10,6 @@ import org.dows.oss.request.OssUploadRequest;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.InputStream;
 import java.util.Map;
 

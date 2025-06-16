@@ -76,6 +76,12 @@
             </dependency>
 
             <dependency>
+                <artifactId>oss-handler</artifactId>
+                <groupId>org.dows.cloud</groupId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.aspectj</groupId>
                 <artifactId>aspectjweaver</artifactId>
                 <version>${aspectj.version}</version>

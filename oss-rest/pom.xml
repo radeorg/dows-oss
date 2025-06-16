@@ -19,8 +19,6 @@
         <dependency>
             <groupId>org.dows.cloud</groupId>
             <artifactId>oss-handler</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.dows.framework</groupId>
