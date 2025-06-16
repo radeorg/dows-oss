@@ -23,7 +23,7 @@
     <!--<packaging>pom</packaging>-->
 
     <properties>
-        <revision>1.0.0-SNAPSHOT</revision>
+        <revision>1.0.1-SNAPSHOT</revision>
         <dows-hrm.version>1.0.0-SNAPSHOT</dows-hrm.version>
         <aac.version>1.0.0-SNAPSHOT</aac.version>
         <mybatis-flex.ext.version>1.10.8.110</mybatis-flex.ext.version>
