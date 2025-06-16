@@ -98,4 +98,15 @@ public class OssUploader {
             throw new IllegalArgumentException("不支持的文件类型");
         }
     }
+
+    // 获取文件文本内容
+    public String downContent(String filePath,Long ossDetailId) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            // 通过OSS客户端下载文件内容到内存
+            tencentOssClient.downLoad(baos, filePath);
+            return baos.toString("UTF-8");
+        } catch (Exception e) {
+            throw new RuntimeException("文件内容获取失败: " + filePath, e);
+        }
+    }
 }

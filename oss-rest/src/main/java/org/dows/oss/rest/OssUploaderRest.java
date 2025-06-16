@@ -1,5 +1,6 @@
 package org.dows.oss.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.FileUploader;
@@ -40,6 +41,16 @@ public class OssUploaderRest implements FileUploaderApi {
     public void uploadFile(InputStream is, OssUploadInputStreamRequest request) {
         fileUploader.upload(is, request);
     }
+
+    /**
+     * 下载文件解析内容
+     * @param ossFilePath ossDetailId 业务系统请求的参数
+     */
+    public String downContent( String ossFilePath,Long ossDetailId){
+        return ossUploader.downContent(ossFilePath,ossDetailId);
+    }
+
+
 
     @Override
     public void callbackTest(String callbackRequest) {
