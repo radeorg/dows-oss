@@ -21,9 +21,9 @@ public class OssTriggerHandler {
     private final OssTriggerService ossTriggerService;
 
     /**
-     * 根据secretId和secretKey获取用户配置触发器
+     * 根据secretId和secretKey获取用户配置触发器（过期时间5分钟）
      */
-    @Cacheable(value = "ossIdentifierCache", key = "'source:' + #source + 'appId:' + #appId")
+    @Cacheable(value = "ossIdentifierCache#3000", key = "'source:' + #source + 'appId:' + #appId")
     public OssIdentifierEntity getOssIdentifierBySourceAndAppId(String source, String appId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .eq(OssIdentifierEntity::getSource, source)
@@ -32,12 +32,13 @@ public class OssTriggerHandler {
     }
 
     /**
-     * 根据ossIdentifierId获oss取用户配置触发器
+     * 根据ossIdentifierId获oss取用户配置触发器（过期时间5分钟）
      */
-    @Cacheable(value = "triggerListCache", key = "'ossIdentifierId:' + #ossIdentifierId")
+//    @Cacheable(value = "triggerListCache#3000", key = "'ossIdentifierId:' + #ossIdentifierId")
     public List<OssTriggerEntity> triggerList(Long ossIdentifierId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
-                .eq(OssTriggerEntity::getOssTriggerId, ossIdentifierId);
+                .eq(OssTriggerEntity::getOssIdentifierId, ossIdentifierId)
+                .orderBy(OssTriggerEntity::getSeq, true);
         return ossTriggerService.list(queryWrapper);
     }
 }

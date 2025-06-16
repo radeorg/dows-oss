@@ -25,7 +25,7 @@ public class OssUploadTriggerCallbackRequest {
     private String fileLink;
 
     @Schema(description = "文件路径")
-    private String basePath;
+    private String filePath;
 
     @Schema(description = "文件扩展表")
     private String fileExt;
@@ -34,5 +34,5 @@ public class OssUploadTriggerCallbackRequest {
     private Long fileSize;
 
     @Schema(description = "存储通道[local,oss,cos,qiniu...]")
-    private String channel;
+    private String storeType;
 }

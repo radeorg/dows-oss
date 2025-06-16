@@ -55,11 +55,11 @@ public class OssUploader {
      * 上传原始文件
      */
     public OssInfo uploadOriginalFile(OssUploadHandlerRequest request) throws FileNotFoundException {
-        String fileName = File.separator + request.getMd5() + request.getFileExt();
         String savePath = request.getFilePath() + File.separator
                 + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
-                + fileName;
-        FileInputStream file = new FileInputStream(request.getFileLocalPath() + fileName);
+                + request.getMd5()
+                + request.getFileExt();
+        FileInputStream file = new FileInputStream(request.getFileLocalPath());
         if (request.getChannel().equals("COS")) {
             return tencentOssClient.upLoad(new BufferedInputStream(file), savePath, false);
         }
@@ -70,11 +70,10 @@ public class OssUploader {
      * 上传markdown解析文件
      */
     public OssInfo uploadParseMarkDownFile(OssUploadHandlerRequest request) throws IOException {
-        String fileName = request.getFileLocalPath() + File.separator + request.getMd5() + request.getFileExt();
         String savePath = request.getFilePath() + File.separator
                 + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
-                + request.getMd5() + ".txt";
-        String parseContent = FileParseUtil.convertToMarkdown(fileName);
+                + request.getMd5() + ".md";
+        String parseContent = FileParseUtil.convertToMarkdown(request.getFileLocalPath());
         if (request.getChannel().equals("COS")) {
             return tencentOssClient.upLoad(new ByteArrayInputStream(parseContent.getBytes()), savePath, false);
         }

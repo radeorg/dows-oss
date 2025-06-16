@@ -3,10 +3,8 @@ package org.dows.oss.api;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
 import org.dows.rade.oss.OssInfo;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -34,8 +32,8 @@ public interface FileUploaderApi {
      * 上传文件至本地服务器（支持图片、文档）
      * @param ossUploadRequest 业务系统请求的参数
      */
-    @PostMapping("/v1/open/oss/file/upload")
-    Map<String, Object> uploadFile(@RequestBody OssUploadRequest ossUploadRequest);
+    @PostMapping(value = "/v1/open/oss/file/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    Map<String, Object> uploadFile(@ModelAttribute OssUploadRequest ossUploadRequest);
 
     /**
      * 文件流形式上传文件

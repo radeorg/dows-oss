@@ -4,7 +4,6 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import io.micrometer.common.util.StringUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
@@ -15,11 +14,12 @@ import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
 import org.dows.oss.service.OssDetailService;
 import org.dows.oss.service.OssFileService;
-import org.dows.oss.trigger.FilePreloadTrigger;
 import org.dows.oss.trigger.FileTrigger;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.context.AppContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,14 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.Executor;
 
 /**
  * 文件上传
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class FileUploader {
 
     @Value("${rade.oss.path:/radeorg}")
@@ -42,13 +41,28 @@ public class FileUploader {
 
     private final Map<String, FileTrigger> fileTriggerMap;
 
-    private final Executor fileUploadTaskExecutor;
+    private final ThreadPoolTaskExecutor fileUploadTaskExecutor;
 
     private final OssTriggerHandler ossTriggerHandler;
     private final OssFileService ossFileService;
     private final OssDetailService ossDetailService;
-    private final FilePreloadTrigger filePreloadTrigger;
 
+    /*
+        此处通过构造器注入bean原因：
+        项目中其他配置类或第三方库自动配置了线程池ThreadPoolTaskExecutor，
+        所以需要通过构造方法明确指定注入的Bean名称，否则或报找到多个bean
+     */
+    public FileUploader(Map<String, FileTrigger> fileTriggerMap,
+                        @Qualifier("fileUploadTaskExecutor") ThreadPoolTaskExecutor fileUploadTaskExecutor,
+                        OssTriggerHandler ossTriggerHandler,
+                        OssFileService ossFileService,
+                        OssDetailService ossDetailService) {
+        this.fileTriggerMap = fileTriggerMap;
+        this.fileUploadTaskExecutor = fileUploadTaskExecutor;
+        this.ossTriggerHandler = ossTriggerHandler;
+        this.ossFileService = ossFileService;
+        this.ossDetailService = ossDetailService;
+    }
     /**
      * 文件上传器
      */
@@ -220,9 +234,9 @@ public class FileUploader {
             for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
                 if (ossTriggerEntity != null) {
                     FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
-                    if (StrUtil.lowerFirst(fileTrigger.getClass().getName()).equals(ossTriggerEntity.getTrigger())) {
+                    if (ossTriggerEntity.getSeq() == 1) {
                         ossFile = saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
-                        filePreloadTrigger.trigger(ossFile, null, ossTriggerEntity);
+                        fileTrigger.trigger(ossFile, null, ossTriggerEntity);
                     } else {
                         OssDetailEntity ossDetail = saveOssDetail(ossFile, ossTriggerEntity, ossIdentifier.getChannel());
                         OssFileEntity finalOssFile = ossFile;

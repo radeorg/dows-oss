@@ -32,6 +32,3 @@ dows:
       baseDir: radeorg/html/pdf
 
     aliyun:
-    scheduler:
-      deleter:
-        expire: 0 0 1 * * ? #每天1点执行

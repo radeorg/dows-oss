@@ -69,11 +69,11 @@ public class OssDetailHandler {
         response.setOssDetailId(ossDetail.getOssDetailId());
         response.setAppId(ossDetail.getAppId());
         response.setTrigger(ossDetail.getTrigger());
-        response.setBasePath(ossDetail.getBasePath());
+        response.setFilePath(ossDetail.getBasePath());
         response.setFileExt(ossDetail.getFileExt());
         response.setFileLink(ossDetail.getFileLink());
         response.setFileSize(ossDetail.getFileSize());
-        response.setChannel(ossDetail.getChannel());
+        response.setStoreType(ossDetail.getChannel());
         return response;
     }
 }

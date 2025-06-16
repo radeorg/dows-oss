@@ -4,13 +4,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.Executor;
-
 @Configuration
-public class ThreadPoolConfig {
+public class UploadFileThreadPoolConfig {
 
     @Bean(name = "fileUploadTaskExecutor")
-    public Executor fileUploadTaskExecutor() {
+    public ThreadPoolTaskExecutor fileUploadTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5); // 核心线程数
         executor.setMaxPoolSize(10); // 最大线程数
