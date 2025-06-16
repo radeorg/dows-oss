@@ -1,19 +1,19 @@
-package org.dows.oss.response;
+package org.dows.oss.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-public class OssUploadTriggerResponse {
+public class OssUploadTriggerCallbackRequest {
 
     @Schema(description = "文件上传ID")
-    private Long ossUploaderId;
+    private Long ossFileId;
 
     @Schema(description = "文件触发详情ID")
     private Long ossDetailId;
 
     @Schema(description = "应用ID")
-    private Long appId;
+    private String appId;
 
     @Schema(description = "触发器（[UPLOAD-上传，OTT-解析]）")
     private String trigger;
@@ -25,7 +25,7 @@ public class OssUploadTriggerResponse {
     private String fileLink;
 
     @Schema(description = "文件路径")
-    private String fileBasePath;
+    private String basePath;
 
     @Schema(description = "文件扩展表")
     private String fileExt;
@@ -33,6 +33,6 @@ public class OssUploadTriggerResponse {
     @Schema(description = "文件大小")
     private Long fileSize;
 
-    @Schema(description = "存储类型[local,oss,cos,qiniu...]")
-    private String storeType;
+    @Schema(description = "存储通道[local,oss,cos,qiniu...]")
+    private String channel;
 }

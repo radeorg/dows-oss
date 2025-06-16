@@ -46,6 +46,13 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
     private Long ossFileId;
 
     /**
+     * 存储通道[cos,oss,qiniu]
+     */
+    @Schema(description = "存储通道[cos,oss,qiniu]")
+    @Column(value = "channel")
+    private String channel;
+
+    /**
      * 触发器（UPLOAD上传、OTT解析）
      */
     @Schema(description = "触发器（UPLOAD上传、OTT解析）")
@@ -65,6 +72,13 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
     @Schema(description = "文件名")
     @Column(value = "file_name")
     private String fileName;
+
+    /**
+     * 文件路径
+     */
+    @Schema(description = "文件路径（业务系统指定）")
+    @Column(value = "base_path")
+    private String basePath;
 
     /**
      * 文件路径
@@ -92,7 +106,7 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
      */
     @Schema(description = "文件大小")
     @Column(value = "file_size")
-    private Integer fileSize;
+    private Long fileSize;
 
     /**
      * 状态，默认0，0代表待处理，1代表已完成，2代表处理失败
@@ -108,6 +122,19 @@ public class OssDetailEntity extends BaseEntity<OssDetailEntity> {
     @Column(value = "failed_reason")
     private String failedReason;
 
+    /**
+     * 顺序
+     */
+    @Schema(description = "顺序")
+    @Column(value = "seq")
+    private Integer seq;
+
+    /**
+     * 重试次数
+     */
+    @Schema(description = "重试次数")
+    @Column(value = "retry_count")
+    private Integer retryCount;
     /**
      * 操作人ID
      */

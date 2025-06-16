@@ -1,13 +1,13 @@
-package org.dows.oss.response;
+package org.dows.oss.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-public class OssUploadResponse {
+public class OssUploadCallbackRequest {
 
     @Schema(description = "文件上传ID")
-    private Long ossUploaderId;
+    private Long ossFileId;
 
     @Schema(description = "批次号")
     private String batchNo;
@@ -16,5 +16,5 @@ public class OssUploadResponse {
     private String fileName;
 
     @Schema(description = "应用ID")
-    private Long appId;
+    private String appId;
 }

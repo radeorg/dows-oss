@@ -3,6 +3,8 @@ package org.dows.oss.trigger;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dows.oss.entity.OssDetailEntity;
+import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class TxtTransformTrigger implements FileTrigger {
 
     @Override
-    public void trigger(Long ossFileId, Object object, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
 
     }
 }

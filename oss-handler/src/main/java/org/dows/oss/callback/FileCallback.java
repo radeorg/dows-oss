@@ -1,9 +1,9 @@
 package org.dows.oss.callback;
 
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.response.CallbackResponse;
 
 public interface FileCallback {
-    void callback(Object object, OssTriggerEntity ossTriggerEntity);
-
+    CallbackResponse callback(Object object, OssTriggerEntity ossTriggerEntity);
 }
 

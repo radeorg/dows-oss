@@ -1,0 +1,17 @@
+#spring:
+#  application:
+#    name: dows-saas-pay
+#  cloud:
+#    consul:
+#      host: consul.sit.dows.org
+#      port: 8500
+#      config:
+#        enabled: ${SPRING_CONFIG_ENABLED:false}
+#        profile-separator: "-"
+#        prefixs:
+#          - config
+#        defaultContext: ${spring.application.name}
+#        format: YAML
+
+
+

@@ -4,30 +4,76 @@ import cn.hutool.extra.spring.SpringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.response.CallbackResponse;
+import org.dows.rade.web.Response;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class BeanFileCallback implements FileCallback {
     @Override
-    public void callback(Object object, OssTriggerEntity ossTriggerEntity) {
+    public CallbackResponse callback(Object object, OssTriggerEntity ossTriggerEntity) {
+        CallbackResponse response = new CallbackResponse();
+        try {
+            String triggerTarget = ossTriggerEntity.getCallbackTarget();
+            String beanName = extractBean(triggerTarget);
+            String methodName = extractMethod(triggerTarget);
 
-        String triggerTarget = ossTriggerEntity.getCallbackTarget();
-        // bean://pkg.class#method,http://url,jdbc://sql...
-        String[] split = triggerTarget.split("");
+            Object obj = invokeBeanMethod(beanName, methodName, object);
+            Response res = (Response) obj;
+            if (res.getCode().equals("200")) {
+                response.setSuccess(true);
+            } else {
+                response.setSuccess(false);
+                response.setMessage(res.getDescription());
+            }
+        } catch (Exception e) {
+            log.error("BeanFileCallback callback error", e);
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+        }
+        return response;
+    }
 
-        Object bean = SpringUtil.getBean(split[1]);
+    private String extractBean(String input) {
+        int start = input.indexOf("//") + 2;
+        int end = input.indexOf("#");
+        return input.substring(start, end);
+    }
+
+    private String extractMethod(String input) {
+        return input.substring(input.indexOf("#") + 1);
+    }
+
+    private Object invokeBeanMethod(String beanName, String methodName, Object... args) {
+        Object bean = SpringUtil.getBean(beanName);
+        Objects.requireNonNull(bean, "Bean not found: " + beanName);
 
         try {
-            Method method = bean.getClass().getMethod(split[2]);
+            Class<?>[] paramTypes = args != null ?
+                    new Class<?>[args.length] : new Class<?>[0];
 
-            Object result = method.invoke(bean);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            if (args != null) {
+                for (int i = 0; i < args.length; i++) {
+                    paramTypes[i] = args[i].getClass();
+                }
+            }
+
+            Method method = bean.getClass().getMethod(methodName, paramTypes);
+            ReflectionUtils.makeAccessible(method);
+            return method.invoke(bean, args);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Method not found: " + methodName, e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException("Method invocation failed", e.getTargetException());
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Method access denied", e);
         }
     }
 }

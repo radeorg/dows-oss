@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Map;
 
 public interface FileUploaderApi {
 
@@ -34,7 +35,7 @@ public interface FileUploaderApi {
      * @param ossUploadRequest 业务系统请求的参数
      */
     @PostMapping("/v1/open/oss/file/upload")
-    void uploadFile(@RequestBody OssUploadRequest ossUploadRequest);
+    Map<String, Object> uploadFile(@RequestBody OssUploadRequest ossUploadRequest);
 
     /**
      * 文件流形式上传文件

@@ -1,0 +1,37 @@
+rade:
+  oss:
+    path: /radeorg
+    modulePath:
+      uim: /uim
+      tencent:
+      enable: true
+      region: ap-shanghai
+      secretId: encrypted$zKkBUjQkfvGTq1y3wKVB4zSVeEAy04cUBt9uQZRmpS8aLan7kfK6vGapAl1KeHi5
+      secretKey: encrypted$uRCnD/tMNANoApqivugRK5C5XMJQql7z5H1ANWi0xs8ElP1iAdy6DIgzbSUbffzj
+      bucket-name: radeorg2025-1350162118
+      base-path: /resume
+      endpoint: myqcloud.com
+      slice-config:
+        task-num: 8
+        part-size: 104857604
+    minio:
+      enable: true
+      access-key: PHTHKEPBYYD079K90B0O
+      secret-key: ya35DAaNmtMKm0m7Yntdwj8m1p5ud+3fQ2kM5XDn
+      bucket-name: hep
+      base-path: /
+      endpoint: http://192.168.1.60:9000
+      slice-config:
+        task-num: 8
+        part-size: 104857604 # 1024*1024*100
+
+
+dows:
+  oss:
+    local:
+      baseDir: radeorg/html/pdf
+
+    aliyun:
+    scheduler:
+      deleter:
+        expire: 0 0 1 * * ? #每天1点执行

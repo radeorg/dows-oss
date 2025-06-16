@@ -2,46 +2,42 @@ package org.dows.oss.trigger;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.callback.FileCallback;
+import org.dows.oss.entity.OssDetailEntity;
+import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.handler.OssDetailHandler;
 import org.dows.oss.handler.OssUploader;
-import org.dows.oss.service.OssFileService;
+import org.dows.oss.request.OssUploadHandlerRequest;
+import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 /**
- * 文件上传成功触发器
+ * 文件上传云服务触发器
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class FileUploadedTrigger implements FileTrigger {
 
-    private final Map<String, FileCallback> fileCallbackMap;
-
     private final OssUploader ossUploader;
-
-    private final OssFileService ossFileService;
+    private final OssDetailHandler ossDetailHandler;
 
     @Override
-    public void trigger(Long ossFileId, Object object, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
+        log.info("文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
-        //ossFileService.query().eq(OssFileEntity::getOssUploaderId, ossTriggerEntity.getOssUploaderId())
-        //Long ossFileId = null;
-        //todo 处理object 上传
-        ossUploader.upload(object);
-        // todo 触发
-        log.info("文件上传成功触发器：{}", ossTriggerEntity.getTrigger());
-        String callbackTarget = ossTriggerEntity.getCallbackTarget();
-        // bean://pkg.class#method,http://url,jdbc://sql...
-        if (callbackTarget.isEmpty()) {
-            return;
+        try {
+            // 文件上传云服务
+            OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
+            OssInfo info = ossUploader.uploadOriginalFile(request);
+
+            // 更新文件信息
+            ossDetailHandler.updateOssDetail(info, ossDetail);
+
+            // 回调业务系统
+            ossDetailHandler.callback(ossDetail, ossTriggerEntity);
+        } catch (Exception e) {
+            log.error("文件上传云服务触发器异常:{}", e.getMessage());
         }
-        String[] split = callbackTarget.split(":");
-
-        FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
-
-        fileCallback.callback(null, ossTriggerEntity);
     }
 }

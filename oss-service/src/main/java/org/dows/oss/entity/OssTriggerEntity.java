@@ -56,11 +56,25 @@ public class OssTriggerEntity extends BaseEntity<OssTriggerEntity> {
     private String callbackTarget;
 
     /**
-     * 文件过期时间
+     * 回调目标
      */
-    @Schema(description = "文件过期时间")
-    @Column(value = "expire_time")
-    private Long expireTime;
+    @Schema(description = "文件存储路径")
+    @Column(value = "base_path")
+    private String basePath;
+
+    /**
+     * 顺序
+     */
+    @Schema(description = "顺序")
+    @Column(value = "seq")
+    private Integer seq;
+
+    /**
+     * 重试次数
+     */
+    @Schema(description = "重试次数")
+    @Column(value = "retry_count")
+    private Integer retryCount;
 
     /**
      * 应用ID

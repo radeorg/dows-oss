@@ -1,9 +1,6 @@
 package org.dows.oss.entity;
 
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
@@ -25,6 +22,7 @@ import org.dows.rade.crud.BaseEntity;
  * @author lait.zhang@gmail.com
  * @since 1.0
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @NoArgsConstructor
@@ -43,9 +41,9 @@ public class OssFileEntity extends BaseEntity<OssFileEntity> {
     /**
      * 文件存储路径（业务系统告知）
      */
-    @Schema(description = "文件存储路径（业务系统告知）")
-    @Column(value = "base_path")
-    private String basePath;
+    @Schema(description = "文件临时路径（存储在本地的路径）")
+    @Column(value = "file_temp_path")
+    private String fileTempPath;
 
     /**
      * 文件后缀
@@ -73,14 +71,7 @@ public class OssFileEntity extends BaseEntity<OssFileEntity> {
      */
     @Schema(description = "原始文件大小")
     @Column(value = "file_size")
-    private Integer fileSize;
-
-    /**
-     * 过期时间（过期自动删除本地文件）
-     */
-    @Schema(description = "过期时间（过期自动删除本地文件）")
-    @Column(value = "expire_time")
-    private Long expireTime;
+    private Long fileSize;
 
     /**
      * 批次号[年月日0001]
@@ -137,6 +128,4 @@ public class OssFileEntity extends BaseEntity<OssFileEntity> {
     @Schema(description = "最后更新时间")
     @Column(value = "ut")
     private Date ut;
-
-
 }

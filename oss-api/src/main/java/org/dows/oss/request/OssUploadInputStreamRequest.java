@@ -19,6 +19,9 @@ public class OssUploadInputStreamRequest {
     @Schema(description = "md5")
     private String md5;
 
-    @Schema(description = "文件名")
+    @Schema(description = "原始文件名")
     private String fileName;
+
+    @Schema(description = "应用ID")
+    private Long appId;
 }
