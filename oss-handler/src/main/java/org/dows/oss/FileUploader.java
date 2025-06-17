@@ -1,7 +1,6 @@
 package org.dows.oss;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +39,7 @@ public class FileUploader {
     private String orgPath;
 
     private final Map<String, FileTrigger> fileTriggerMap;
-
     private final ThreadPoolTaskExecutor fileUploadTaskExecutor;
-
     private final OssTriggerHandler ossTriggerHandler;
     private final OssFileService ossFileService;
     private final OssDetailService ossDetailService;
@@ -95,10 +92,10 @@ public class FileUploader {
                 }
                 FileUtil.writeFromStream(is, dest);
 
-                // 执行触发器
                 OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
                 info.setMd5(request.getMd5());
 
+                // 保存文件及执行触发器
                 trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
             } catch (Exception e) {
                 log.error("文件流上传失败: {}", originalFileName, e);

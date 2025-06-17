@@ -40,7 +40,7 @@ public class FileParseUtil {
     /**
      * 解析文档并转为markdown格式
      */
-    public static String convertToMarkdown(String pdfPath) throws IOException {
+    public static String convertToTxt(String pdfPath) throws IOException {
         StringBuilder content = new StringBuilder();
         try {
             PdfReader reader = new PdfReader(pdfPath);
@@ -49,11 +49,18 @@ public class FileParseUtil {
                 String text = PdfTextExtractor.getTextFromPage(reader, i);
                 content.append(removeHeaderFooter(text, docLocale));
             }
-            return parseToMarkdown(content.toString());
+            return content.toString();
         } catch (Exception e) {
             log.error("PDF解析失败", e);
             throw e;
         }
+    }
+
+    /**
+     * 解析文档并转为markdown格式
+     */
+    public static String convertToMarkdown(String pdfPath) throws IOException {
+        return parseToMarkdown(convertToTxt(pdfPath));
     }
 
     /**

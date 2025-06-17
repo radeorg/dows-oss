@@ -1,11 +1,16 @@
 package org.dows.oss.trigger;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.handler.OssDetailHandler;
+import org.dows.oss.handler.OssUploaderHandler;
+import org.dows.oss.request.OssUploadHandlerRequest;
+import org.dows.oss.response.CallbackResponse;
+import org.dows.oss.utils.FileParseUtil;
+import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,8 +21,33 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TxtTransformTrigger implements FileTrigger {
 
+    private final OssUploaderHandler ossUploaderHandler;
+    private final OssDetailHandler ossDetailHandler;
+
     @Override
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
+        log.info("文本文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
+        try {
+            // 解析文本
+            String parseContent = FileParseUtil.convertToTxt(ossFile.getFileTempPath());
+
+            // 文本上传云服务
+            OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
+            request.setFileExt(".txt");
+            OssInfo info = ossUploaderHandler.uploadFileContent(request, parseContent);
+            if (info != null) {
+                // 更新文件上传链接信息
+                ossDetailHandler.updateOssDetailFileInfo(info, ossDetail);
+
+                // 回调业务系统
+                CallbackResponse callbackResponse = ossDetailHandler.callback( ossDetail, ossTriggerEntity, parseContent);
+
+                // 更新文件回调信息
+                ossDetailHandler.updateOssDetailCallbackInfo(ossDetail, callbackResponse);
+            }
+        } catch (Exception e) {
+            log.error("文件上传云服务触发器异常:{}", e.getMessage());
+        }
     }
 }

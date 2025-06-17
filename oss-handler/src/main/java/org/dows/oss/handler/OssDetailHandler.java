@@ -3,6 +3,7 @@ package org.dows.oss.handler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.callback.FileCallback;
+import org.dows.oss.constant.PatternConstant;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
@@ -10,7 +11,11 @@ import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.service.OssDetailService;
+import org.dows.oss.utils.CommonUtil;
+import org.dows.rade.aac.AacUser;
 import org.dows.rade.oss.OssInfo;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -23,17 +28,27 @@ public class OssDetailHandler {
     private final Map<String, FileCallback> fileCallbackMap;
     private final OssDetailService ossDetailService;
 
-    public OssUploadHandlerRequest toOssUploadHandlerRequest(OssFileEntity ossFile, OssDetailEntity ossDetail){
-        OssUploadHandlerRequest request = new OssUploadHandlerRequest();
-        request.setMd5(ossFile.getMd5());
-        request.setFileExt(ossFile.getFileExt());
-        request.setFileLocalPath(ossFile.getFileTempPath());
-        request.setFilePath(ossDetail.getBasePath());
-        request.setChannel(ossDetail.getChannel());
-        return request;
+    public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity){
+        return callback(ossDetail, ossTriggerEntity, null);
     }
 
-    public void updateOssDetail(OssInfo info, OssDetailEntity ossDetail){
+    public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity, String content){
+        String callbackTarget = ossTriggerEntity.getCallbackTarget();
+        if (!callbackTarget.isEmpty()) {
+            String[] split = callbackTarget.split(":");
+            if (split.length > 0) {
+                String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
+                String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
+                OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
+
+                FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
+                return fileCallback.callback(request, ossTriggerEntity);
+            }
+        }
+        return null;
+    }
+
+    public void updateOssDetailFileInfo(OssInfo info, OssDetailEntity ossDetail){
         if (info != null) {
             ossDetail.setMd5(info.getMd5());
             ossDetail.setFileName(info.getName());
@@ -45,13 +60,8 @@ public class OssDetailHandler {
         }
     }
 
-    public void callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity){
-        String callbackTarget = ossTriggerEntity.getCallbackTarget();
-        if (!callbackTarget.isEmpty()) {
-            String[] split = callbackTarget.split(":");
-
-            FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
-            CallbackResponse callbackResponse = fileCallback.callback(toOssUploadTriggerResponse(ossDetail), ossTriggerEntity);
+    public void updateOssDetailCallbackInfo(OssDetailEntity ossDetail, CallbackResponse callbackResponse){
+        if (callbackResponse != null) {
             if (callbackResponse.getSuccess()){
                 ossDetail.setState(1);
             } else {
@@ -62,18 +72,30 @@ public class OssDetailHandler {
         }
     }
 
-    private OssUploadTriggerCallbackRequest toOssUploadTriggerResponse(OssDetailEntity ossDetail){
-        OssUploadTriggerCallbackRequest response = new OssUploadTriggerCallbackRequest();
-        response.setMd5(ossDetail.getMd5());
-        response.setOssFileId(ossDetail.getOssFileId());
-        response.setOssDetailId(ossDetail.getOssDetailId());
-        response.setAppId(ossDetail.getAppId());
-        response.setTrigger(ossDetail.getTrigger());
-        response.setFilePath(ossDetail.getBasePath());
-        response.setFileExt(ossDetail.getFileExt());
-        response.setFileLink(ossDetail.getFileLink());
-        response.setFileSize(ossDetail.getFileSize());
-        response.setStoreType(ossDetail.getChannel());
-        return response;
+    public OssUploadHandlerRequest toOssUploadHandlerRequest(OssFileEntity ossFile, OssDetailEntity ossDetail){
+        OssUploadHandlerRequest request = new OssUploadHandlerRequest();
+        request.setMd5(ossFile.getMd5());
+        request.setFileExt(ossFile.getFileExt());
+        request.setFileLocalPath(ossFile.getFileTempPath());
+        request.setFilePath(ossDetail.getBasePath());
+        request.setChannel(ossDetail.getChannel());
+        return request;
+    }
+
+    private OssUploadTriggerCallbackRequest toTriggerCallbackRequest(OssDetailEntity ossDetail, String phone, String email){
+        OssUploadTriggerCallbackRequest request = new OssUploadTriggerCallbackRequest();
+        request.setMd5(ossDetail.getMd5());
+        request.setOssFileId(ossDetail.getOssFileId());
+        request.setOssDetailId(ossDetail.getOssDetailId());
+        request.setAppId(ossDetail.getAppId());
+        request.setTrigger(ossDetail.getTrigger());
+        request.setFilePath(ossDetail.getBasePath());
+        request.setFileExt(ossDetail.getFileExt());
+        request.setFileLink(ossDetail.getFileLink());
+        request.setFileSize(ossDetail.getFileSize());
+        request.setStoreType(ossDetail.getChannel());
+        request.setPhone(phone);
+        request.setEmail(email);
+        return request;
     }
 }

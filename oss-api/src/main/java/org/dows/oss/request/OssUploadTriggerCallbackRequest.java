@@ -35,4 +35,13 @@ public class OssUploadTriggerCallbackRequest {
 
     @Schema(description = "存储通道[local,oss,cos,qiniu...]")
     private String storeType;
+
+    @Schema(description = "电话")
+    private String phone;
+
+    @Schema(description = "邮箱")
+    private String email;
+
+    @Schema(description = "操作人ID")
+    private Long operatorId;
 }

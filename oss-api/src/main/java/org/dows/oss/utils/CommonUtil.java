@@ -1,10 +1,16 @@
 package org.dows.oss.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class CommonUtil {
@@ -32,5 +38,22 @@ public class CommonUtil {
         }
 
         return null;
+    }
+
+    /**
+     * 使用正则表达式提取匹配项
+     */
+    public static String extractPattern(String content, Pattern pattern) {
+        if (StringUtils.isNotEmpty(content)) {
+            List<String> results = new ArrayList<>();
+            Matcher matcher = pattern.matcher(content);
+            while (matcher.find()) {
+                results.add(matcher.group());
+            }
+            if(!CollectionUtils.isEmpty(results)){
+                return results.get(0);
+            }
+        }
+        return "";
     }
 }

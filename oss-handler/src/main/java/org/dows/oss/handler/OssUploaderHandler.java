@@ -5,9 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.utils.CommonUtil;
-import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
-import org.dows.rade.oss.S3OssClient;
 import org.dows.rade.oss.tencent.TencentOssClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,15 +17,13 @@ import java.util.*;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OssUploader {
+public class OssUploaderHandler {
 
     @Value("${rade.oss.modulePath.uim:/uim}")
     private String orgImgPath;
-
-    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
+    private static final List<String> IMG_ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
 
     private final TencentOssClient tencentOssClient;
-    private final Map<String, S3OssClient> ossClientMap;
 
     /**
      * 上传文件到COS服务
@@ -55,10 +51,7 @@ public class OssUploader {
      * 上传原始文件
      */
     public OssInfo uploadOriginalFile(OssUploadHandlerRequest request) throws FileNotFoundException {
-        String savePath = request.getFilePath() + File.separator
-                + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
-                + request.getMd5()
-                + request.getFileExt();
+        String savePath = getCosSavePath(request);
         FileInputStream file = new FileInputStream(request.getFileLocalPath());
         if (request.getChannel().equals("COS")) {
             return tencentOssClient.upLoad(new BufferedInputStream(file), savePath, false);
@@ -67,15 +60,12 @@ public class OssUploader {
     }
 
     /**
-     * 上传markdown解析文件
+     * 上传markdown/txt解析文件
      */
-    public OssInfo uploadParseMarkDownFile(OssUploadHandlerRequest request) throws IOException {
-        String savePath = request.getFilePath() + File.separator
-                + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
-                + request.getMd5() + ".md";
-        String parseContent = FileParseUtil.convertToMarkdown(request.getFileLocalPath());
-        if (request.getChannel().equals("COS")) {
-            return tencentOssClient.upLoad(new ByteArrayInputStream(parseContent.getBytes()), savePath, false);
+    public OssInfo uploadFileContent(OssUploadHandlerRequest request, String content){
+        if (request.getChannel() != null && request.getChannel().equals("COS")) {
+            String savePath = getCosSavePath(request);
+            return tencentOssClient.upLoad(new ByteArrayInputStream(content.getBytes()), savePath, false);
         }
         return null;
     }
@@ -93,19 +83,14 @@ public class OssUploader {
 
     private void checkFileExtension(String fileName) {
         String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+        if (!IMG_ALLOWED_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("不支持的文件类型");
         }
     }
 
-    // 获取文件文本内容
-    public String downContent(String filePath,Long ossDetailId) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            // 通过OSS客户端下载文件内容到内存
-            tencentOssClient.downLoad(baos, filePath);
-            return baos.toString("UTF-8");
-        } catch (Exception e) {
-            throw new RuntimeException("文件内容获取失败: " + filePath, e);
-        }
+    private String getCosSavePath(OssUploadHandlerRequest request){
+        return request.getFilePath() + File.separator
+                + CommonUtil.formatDate(new Date(), "yyMMdd") + File.separator
+                + request.getMd5() + request.getFileExt();
     }
 }

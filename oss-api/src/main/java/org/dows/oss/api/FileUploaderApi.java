@@ -39,17 +39,4 @@ public interface FileUploaderApi {
      * 文件流形式上传文件
      */
     void uploadFile(InputStream is, OssUploadInputStreamRequest request);
-
-    /**
-     * 下载文件解析内容
-     * @param ossFilePath 业务系统请求的参数
-     */
-    @PostMapping("/v1/open/oss/downContent")
-    String downContent( @RequestParam String ossFilePath,@RequestParam Long ossDetailId);
-
-    /**
-     * 回调测试接口
-     */
-    @PostMapping("/v1/open/oss/test/callback")
-    void callbackTest(@RequestParam String callbackRequest);
 }

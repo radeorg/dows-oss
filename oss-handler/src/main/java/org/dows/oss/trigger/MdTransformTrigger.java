@@ -6,8 +6,10 @@ import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.handler.OssDetailHandler;
-import org.dows.oss.handler.OssUploader;
+import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.request.OssUploadHandlerRequest;
+import org.dows.oss.response.CallbackResponse;
+import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
@@ -19,23 +21,31 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MdTransformTrigger implements FileTrigger {
 
-    private final OssUploader ossUploader;
+    private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
 
     @Override
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
-        log.info("文件转换触发器：{}", ossTriggerEntity.getTrigger());
+        log.info("MD文件转换触发器：{}", ossTriggerEntity.getTrigger());
 
         try {
-            // 文件上传云服务
+            // 解析文本
             OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
-            OssInfo info = ossUploader.uploadParseMarkDownFile(request);
+            request.setFileExt(".md");
+            String parseContent = FileParseUtil.convertToMarkdown(request.getFileLocalPath());
 
-            // 更新文件信息
-            ossDetailHandler.updateOssDetail(info, ossDetail);
+            // 文本上传云服务
+            OssInfo info = ossUploaderHandler.uploadFileContent(request, parseContent);
+            if (info != null) {
+                // 更新文件上传链接信息
+                ossDetailHandler.updateOssDetailFileInfo(info, ossDetail);
 
-            // 回调业务系统
-            ossDetailHandler.callback(ossDetail, ossTriggerEntity);
+                // 回调业务系统
+                CallbackResponse callbackResponse = ossDetailHandler.callback( ossDetail, ossTriggerEntity, parseContent);
+
+                // 更新文件回调信息
+                ossDetailHandler.updateOssDetailCallbackInfo(ossDetail, callbackResponse);
+            }
         } catch (Exception e) {
             log.error("文件上传云服务触发器异常:{}", e.getMessage());
         }
