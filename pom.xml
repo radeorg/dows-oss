@@ -11,6 +11,7 @@
     <modules>
         <module>oss-api</module>
         <module>oss-app</module>
+        <module>oss-boot</module>
         <module>oss-feign</module>
         <module>oss-service</module>
         <module>oss-handler</module>
@@ -20,14 +21,13 @@
     <artifactId>dows-oss</artifactId>
     <groupId>org.dows.cloud</groupId>
     <version>${revision}</version>
-    <!--<packaging>pom</packaging>-->
 
     <properties>
         <revision>1.0.1-SNAPSHOT</revision>
         <dows-hrm.version>1.0.0-SNAPSHOT</dows-hrm.version>
         <aac.version>1.0.0-SNAPSHOT</aac.version>
         <mybatis-flex.ext.version>1.10.8.110</mybatis-flex.ext.version>
-        <jdk.version>23</jdk.version>
+        <jdk.version>21</jdk.version>
     </properties>
 
     <dependencies>

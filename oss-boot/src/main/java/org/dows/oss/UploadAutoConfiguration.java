@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @MapperScan("org.dows.oss.mapper")
 @ComponentScan(basePackages = {"org.dows.oss.mapper", "org.dows.oss.service"})
-
 public class UploadAutoConfiguration {
 }
 
