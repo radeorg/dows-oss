@@ -12,10 +12,7 @@ import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.service.OssDetailService;
 import org.dows.oss.utils.CommonUtil;
-import org.dows.rade.aac.AacUser;
 import org.dows.rade.oss.OssInfo;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

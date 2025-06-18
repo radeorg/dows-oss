@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ import java.util.List;
 @EnableAutoTable // 开启自动建表
 @EnableAsync // 开启异步处理
 @EnableCaching // 开启缓存
+@EnableScheduling
 @SpringBootApplication
 @ComponentScan(basePackages = {"org.dows.oss", "org.dows.rade.oss"})
 public class OssApplication implements AppInstance {

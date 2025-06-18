@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.dows.oss.constant.OssExceptionStatusCode;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssIdentifierEntity;
@@ -16,6 +17,7 @@ import org.dows.oss.service.OssFileService;
 import org.dows.oss.trigger.FileTrigger;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.context.AppContext;
+import org.dows.rade.oss.OssException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -25,6 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -47,7 +51,7 @@ public class FileUploader {
     /*
         此处通过构造器注入bean原因：
         项目中其他配置类或第三方库自动配置了线程池ThreadPoolTaskExecutor，
-        所以需要通过构造方法明确指定注入的Bean名称，否则或报找到多个bean
+        所以需要通过构造方法明确指定注入的Bean名称，否则会报找到多个bean
      */
     public FileUploader(Map<String, FileTrigger> fileTriggerMap,
                         @Qualifier("fileUploadTaskExecutor") ThreadPoolTaskExecutor fileUploadTaskExecutor,
@@ -60,14 +64,15 @@ public class FileUploader {
         this.ossFileService = ossFileService;
         this.ossDetailService = ossDetailService;
     }
+
     /**
      * 文件上传器
      */
-    public Map<String, Object> upload(OssUploadRequest ossUploadRequest) {
+    public Map<String, Object> upload(OssUploadRequest request) {
         log.info("文件上传");
-        OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(ossUploadRequest.getSource());
+        OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
-        return uploadFileToLocal(ossUploadRequest, ossIdentifierEntity);
+        return uploadFileToLocal(request, ossIdentifierEntity);
     }
 
     /**
@@ -75,32 +80,51 @@ public class FileUploader {
      */
     public void upload(InputStream is, OssUploadInputStreamRequest request) {
         log.info("文件流上传");
-        OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource());
+        OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
         OssFileEntity ossFile = ossFileService.getOne(QueryWrapper.create().eq(OssFileEntity::getMd5, request.getMd5()));
         if (ossFile != null) {
-            String originalFileName = request.getFileName();
-            String targetDirectory = getTargetDirectory(request.getSource());
-            String targetFilePath = getFilePath(targetDirectory, originalFileName, request.getMd5());
-            File dest = new File(targetFilePath);
-            File parentDir = dest.getParentFile();
-            try {
-                if (!parentDir.exists()) {
-                    if (!parentDir.mkdirs()) {
-                        throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
-                    }
+            throw new OssException(OssExceptionStatusCode.FILE_EXIST);
+        }
+        String originalFileName = request.getFileName();
+        String targetDirectory = getTargetDirectory(request.getSource());
+        String targetFilePath = getFilePath(targetDirectory, originalFileName, request.getMd5());
+        File dest = new File(targetFilePath);
+        File parentDir = dest.getParentFile();
+        try {
+            if (!parentDir.exists()) {
+                if (!parentDir.mkdirs()) {
+                    throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
                 }
-                FileUtil.writeFromStream(is, dest);
+            }
+            FileUtil.writeFromStream(is, dest);
 
-                OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
-                info.setMd5(request.getMd5());
+            OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
+            info.setMd5(request.getMd5());
 
-                // 保存文件及执行触发器
-                trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
-            } catch (Exception e) {
-                log.error("文件流上传失败: {}", originalFileName, e);
-                if (dest.exists() && !dest.delete()) {
-                    log.error("文件流上传删除失败: {}", dest.getAbsolutePath());
+            // 保存文件及执行触发器
+            trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
+        } catch (Exception e) {
+            log.error("文件流上传失败: {}", originalFileName, e);
+            if (dest.exists() && !dest.delete()) {
+                log.error("文件流上传删除失败: {}", dest.getAbsolutePath());
+            }
+        }
+    }
+
+    public void deleteExpireLocalFile(){
+        LocalDate localDate = new Date().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .minusDays(1);  // 直接减天数
+
+        List<OssFileEntity> ossFileEntities = ossFileService.list(QueryWrapper.create().lt(OssFileEntity::getTs, localDate));
+        if (ossFileEntities != null && !ossFileEntities.isEmpty()) {
+            for (OssFileEntity ossFileEntity : ossFileEntities) {
+                String filePath = ossFileEntity.getFileTempPath();
+                File file = new File(filePath);
+                if (file.exists() && !file.delete()) {
+                    log.error("文件删除失败: {}", filePath);
                 }
             }
         }
@@ -178,10 +202,13 @@ public class FileUploader {
         return fileMd5s;
     }
 
-    private OssIdentifierEntity validateOssIdentifier(String source){
+    private OssIdentifierEntity validateOssIdentifier(String source, String secretId, String secretKey){
         OssIdentifierEntity ossIdentifierEntity = ossTriggerHandler.getOssIdentifierBySourceAndAppId(source, AppContext.getAppId());
         if (ossIdentifierEntity == null) {
-            throw new IllegalArgumentException("未找到对应的OSS配置");
+            throw new OssException(OssExceptionStatusCode.OSS_IDENTIFIER_NOT_FOUND);
+        }
+        if (!ossIdentifierEntity.getSecretId().equals(secretId) || !ossIdentifierEntity.getSecretKey().equals(secretKey)) {
+            throw new OssException(OssExceptionStatusCode.OSS_SECRET_NOT_FOUND);
         }
         return ossIdentifierEntity;
     }
