@@ -56,4 +56,11 @@ public class CommonUtil {
         }
         return "";
     }
+
+    /**
+     * 获取文件扩展名
+     */
+    public static String getFileExt(String fileName){
+        return fileName.substring(fileName.lastIndexOf("."));
+    }
 }

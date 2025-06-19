@@ -45,6 +45,19 @@ public class OssDetailHandler {
         return null;
     }
 
+    public OssDetailEntity saveOssDetail(OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
+        OssDetailEntity detailEntity = new OssDetailEntity();
+        detailEntity.setOssFileId(ossFile.getOssFileId());
+        detailEntity.setAppId(trigger.getAppId());
+        detailEntity.setTrigger(trigger.getTrigger());
+        detailEntity.setChannel(channel);
+        detailEntity.setBasePath(trigger.getBasePath());
+        detailEntity.setSeq(trigger.getSeq());
+        detailEntity.setRetryCount(trigger.getRetryCount());
+        ossDetailService.save(detailEntity);
+        return detailEntity;
+    }
+
     public void updateOssDetailFileInfo(OssInfo info, OssDetailEntity ossDetail){
         if (info != null) {
             ossDetail.setMd5(info.getMd5());

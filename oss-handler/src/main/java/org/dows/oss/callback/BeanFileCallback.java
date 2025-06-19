@@ -6,11 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.rade.web.Response;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class BeanFileCallback implements FileCallback {
             String methodName = extractMethod(triggerTarget);
 
             Object obj = invokeBeanMethod(beanName, methodName, object);
+
             Response res = (Response) obj;
             if (res.getCode().equals("200")) {
                 response.setSuccess(true);
@@ -50,22 +54,26 @@ public class BeanFileCallback implements FileCallback {
         return input.substring(input.indexOf("#") + 1);
     }
 
-    private Object invokeBeanMethod(String beanName, String methodName, Object arg) {
+    private Object invokeBeanMethod(String beanName, String methodName, Object... args) {
         Object bean = SpringUtil.getBean(beanName);
+        Objects.requireNonNull(bean, "Bean not found: " + beanName);
+
         try {
-            // 遍历所有方法匹配名称和注解
-            for (Method method : bean.getClass().getDeclaredMethods()) {
-                if (method.getName().equals(methodName)) {
-                    Parameter[] params = method.getParameters();
-                    if (params.length == 1 &&
-                            params[0].isAnnotationPresent(RequestBody.class)) {
-                        return method.invoke(bean, arg);
-                    }
-                }
-            }
-            throw new NoSuchMethodException(methodName);
-        } catch (Exception e) {
-            throw new RuntimeException("Invocation failed", e);
+            Class<?>[] paramTypes = args != null ?
+                    Arrays.stream(args).map(Object::getClass).toArray(Class<?>[]::new) : new Class<?>[0];
+
+            Method method = ReflectionUtils.findMethod(
+                    AopUtils.getTargetClass(bean), methodName, paramTypes);
+            Objects.requireNonNull(method, "Method not found: " + methodName);
+
+            ReflectionUtils.makeAccessible(method);
+            return method.invoke(bean, args);
+        } catch (InvocationTargetException e) {
+            Throwable targetEx = e.getTargetException();
+            throw (targetEx instanceof RuntimeException) ?
+                    (RuntimeException)targetEx : new RuntimeException(targetEx);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Method access denied", e);
         }
     }
 }

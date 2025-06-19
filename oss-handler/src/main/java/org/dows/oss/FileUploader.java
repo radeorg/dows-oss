@@ -1,7 +1,6 @@
 package org.dows.oss;
 
 import cn.hutool.core.io.FileUtil;
-import com.mybatisflex.core.query.QueryWrapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.constant.OssExceptionStatusCode;
@@ -9,11 +8,11 @@ import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssIdentifierEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.handler.OssDetailHandler;
+import org.dows.oss.handler.OssFileHandler;
 import org.dows.oss.handler.OssTriggerHandler;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
-import org.dows.oss.service.OssDetailService;
-import org.dows.oss.service.OssFileService;
 import org.dows.oss.trigger.FileTrigger;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.context.AppContext;
@@ -27,8 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -45,8 +42,8 @@ public class FileUploader {
     private final Map<String, FileTrigger> fileTriggerMap;
     private final ThreadPoolTaskExecutor fileUploadTaskExecutor;
     private final OssTriggerHandler ossTriggerHandler;
-    private final OssFileService ossFileService;
-    private final OssDetailService ossDetailService;
+    private final OssFileHandler ossFileHandler;
+    private final OssDetailHandler ossDetailHandler;
 
     /*
         此处通过构造器注入bean原因：
@@ -56,13 +53,13 @@ public class FileUploader {
     public FileUploader(Map<String, FileTrigger> fileTriggerMap,
                         @Qualifier("fileUploadTaskExecutor") ThreadPoolTaskExecutor fileUploadTaskExecutor,
                         OssTriggerHandler ossTriggerHandler,
-                        OssFileService ossFileService,
-                        OssDetailService ossDetailService) {
+                        OssFileHandler ossFileHandler,
+                        OssDetailHandler ossDetailHandler) {
         this.fileTriggerMap = fileTriggerMap;
         this.fileUploadTaskExecutor = fileUploadTaskExecutor;
         this.ossTriggerHandler = ossTriggerHandler;
-        this.ossFileService = ossFileService;
-        this.ossDetailService = ossDetailService;
+        this.ossFileHandler = ossFileHandler;
+        this.ossDetailHandler = ossDetailHandler;
     }
 
     /**
@@ -82,7 +79,7 @@ public class FileUploader {
         log.info("文件流上传");
         OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
-        OssFileEntity ossFile = ossFileService.getOne(QueryWrapper.create().eq(OssFileEntity::getMd5, request.getMd5()));
+        OssFileEntity ossFile = ossFileHandler.getOneByMd5(request.getMd5());
         if (ossFile != null) {
             throw new OssException(OssExceptionStatusCode.FILE_EXIST);
         }
@@ -113,12 +110,7 @@ public class FileUploader {
     }
 
     public void deleteExpireLocalFile(){
-        LocalDate localDate = new Date().toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
-                .minusDays(1);  // 直接减天数
-
-        List<OssFileEntity> ossFileEntities = ossFileService.list(QueryWrapper.create().lt(OssFileEntity::getTs, localDate));
+        List<OssFileEntity> ossFileEntities = ossFileHandler.listExpireOssFiles();
         if (ossFileEntities != null && !ossFileEntities.isEmpty()) {
             for (OssFileEntity ossFileEntity : ossFileEntities) {
                 String filePath = ossFileEntity.getFileTempPath();
@@ -193,7 +185,7 @@ public class FileUploader {
                 .toList();
 
         List<String> fileMd5s = new ArrayList<>();
-        List<OssFileEntity> ossFiles = ossFileService.list(QueryWrapper.create().in(OssFileEntity::getMd5, md5s));
+        List<OssFileEntity> ossFiles = ossFileHandler.listByMd5s(md5s);
         if (ossFiles != null && !ossFiles.isEmpty()) {
             for (OssFileEntity ossUploaderEntity : ossFiles) {
                 fileMd5s.add(ossUploaderEntity.getMd5());
@@ -214,13 +206,6 @@ public class FileUploader {
     }
 
     /**
-     * 获取文件扩展名
-     */
-    private String getFileExt(String fileName){
-        return fileName.substring(fileName.lastIndexOf("."));
-    }
-
-    /**
      * 获取文件目标存储目录
      */
     private String getTargetDirectory(String directory){
@@ -237,7 +222,7 @@ public class FileUploader {
      * newFileName   新文件名（不带扩展名）
      */
     private String getFilePath(String targetDirectory, String oldFileName, String newFileName){
-        return targetDirectory + File.separator + newFileName + getFileExt(oldFileName);
+        return targetDirectory + File.separator + newFileName + CommonUtil.getFileExt(oldFileName);
     }
 
     private String getFileName(MultipartFile file) {
@@ -259,10 +244,10 @@ public class FileUploader {
                 if (ossTriggerEntity != null) {
                     FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
                     if (ossTriggerEntity.getSeq() == 1) {
-                        ossFile = saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
+                        ossFile = ossFileHandler.saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
                         fileTrigger.trigger(ossFile, null, ossTriggerEntity);
                     } else {
-                        OssDetailEntity ossDetail = saveOssDetail(ossFile, ossTriggerEntity, ossIdentifier.getChannel());
+                        OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, ossIdentifier.getChannel());
                         OssFileEntity finalOssFile = ossFile;
                         fileUploadTaskExecutor.execute(() -> {
                             fileTrigger.trigger(finalOssFile, ossDetail, ossTriggerEntity);
@@ -271,32 +256,5 @@ public class FileUploader {
                 }
             }
         }
-    }
-
-    private OssFileEntity saveOssFile(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifierEntity, String filePath, String fileName, Long fileSize){
-        OssFileEntity entity = new OssFileEntity();
-        entity.setFileName(fileName);
-        entity.setMd5(info.getMd5());
-        entity.setFileExt(getFileExt(fileName));
-        entity.setFileSize(fileSize);
-        entity.setFileTempPath(filePath);
-        entity.setBatchNo(CommonUtil.formatDate(new Date(), "yyMMddHH"));
-        entity.setAppId(ossIdentifierEntity.getAppId());
-        entity.setSource(ossIdentifierEntity.getSource());
-        ossFileService.save(entity);
-        return entity;
-    }
-
-    private OssDetailEntity saveOssDetail(OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
-        OssDetailEntity detailEntity = new OssDetailEntity();
-        detailEntity.setOssFileId(ossFile.getOssFileId());
-        detailEntity.setAppId(trigger.getAppId());
-        detailEntity.setTrigger(trigger.getTrigger());
-        detailEntity.setChannel(channel);
-        detailEntity.setBasePath(trigger.getBasePath());
-        detailEntity.setSeq(trigger.getSeq());
-        detailEntity.setRetryCount(trigger.getRetryCount());
-        ossDetailService.save(detailEntity);
-        return detailEntity;
     }
 }
