@@ -9,7 +9,6 @@ import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.handler.OssFileHandler;
 import org.dows.oss.request.OssUploadCallbackRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
@@ -25,7 +24,6 @@ public class FilePreloadTrigger implements FileTrigger{
 
     private final OssFileHandler ossFileHandler;
 
-    @Transactional
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         log.info("文件预上传触发器：{}", ossTriggerEntity.getTrigger());
 
@@ -40,10 +38,6 @@ public class FilePreloadTrigger implements FileTrigger{
         }
     }
 
-    @Override
-    public FileCallback getFileCallback(String callbackType) {
-        return null;
-    }
 
     private OssUploadCallbackRequest toOssUploadResponse(OssFileEntity ossFileEntity){
         OssUploadCallbackRequest response = new OssUploadCallbackRequest();

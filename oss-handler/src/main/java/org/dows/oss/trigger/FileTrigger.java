@@ -8,12 +8,16 @@ import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.utils.CommonUtil;
+import org.dows.rade.util.SpringUtil;
 
 public interface FileTrigger/* extends Runnable*/ {
 
     void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity);
 
-    FileCallback getFileCallback(String callbackType);
+    default FileCallback getFileCallback(String callbackType){
+        // todo 是否为空判断？
+        return SpringUtil.getBean(callbackType + "FileCallback");
+    }
 
 
     default CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {

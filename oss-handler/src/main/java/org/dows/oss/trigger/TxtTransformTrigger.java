@@ -53,9 +53,4 @@ public class TxtTransformTrigger implements FileTrigger {
         }
     }
 
-    @Override
-    public FileCallback getFileCallback(String callbackType) {
-        // todo 是否为空判断？
-        return SpringUtil.getBean(callbackType + "FileCallback");
-    }
 }
