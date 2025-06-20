@@ -6,8 +6,10 @@ import org.dows.oss.callback.FileCallback;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.handler.OssFileHandler;
 import org.dows.oss.request.OssUploadCallbackRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
@@ -21,9 +23,14 @@ public class FilePreloadTrigger implements FileTrigger{
 
     private final Map<String, FileCallback> fileCallbackMap;
 
+    private final OssFileHandler ossFileHandler;
+
+    @Transactional
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         log.info("文件预上传触发器：{}", ossTriggerEntity.getTrigger());
 
+        //todo ossFile的save与callback放在一个事物里
+        //ossFile = ossFileHandler.saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
         String callbackTarget = ossTriggerEntity.getCallbackTarget();
         if (!callbackTarget.isEmpty()) {
             String[] split = callbackTarget.split(":");
@@ -31,6 +38,11 @@ public class FilePreloadTrigger implements FileTrigger{
             FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
             fileCallback.callback(toOssUploadResponse(ossFile), ossTriggerEntity);
         }
+    }
+
+    @Override
+    public FileCallback getFileCallback(String callbackType) {
+        return null;
     }
 
     private OssUploadCallbackRequest toOssUploadResponse(OssFileEntity ossFileEntity){

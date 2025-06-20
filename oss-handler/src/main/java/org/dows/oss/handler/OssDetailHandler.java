@@ -2,30 +2,24 @@ package org.dows.oss.handler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.callback.FileCallback;
-import org.dows.oss.constant.PatternConstant;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
-import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.service.OssDetailService;
-import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OssDetailHandler {
 
-    private final Map<String, FileCallback> fileCallbackMap;
+    //private final Map<String, FileCallback> fileCallbackMap;
     private final OssDetailService ossDetailService;
 
-    public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity){
+    /*public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity){
         return callback(ossDetail, ossTriggerEntity, null);
     }
 
@@ -43,7 +37,7 @@ public class OssDetailHandler {
             }
         }
         return null;
-    }
+    }*/
 
     public OssDetailEntity saveOssDetail(OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
         OssDetailEntity detailEntity = new OssDetailEntity();
@@ -92,7 +86,7 @@ public class OssDetailHandler {
         return request;
     }
 
-    private OssUploadTriggerCallbackRequest toTriggerCallbackRequest(OssDetailEntity ossDetail, String phone, String email){
+    /*private OssUploadTriggerCallbackRequest toTriggerCallbackRequest(OssDetailEntity ossDetail, String phone, String email){
         OssUploadTriggerCallbackRequest request = new OssUploadTriggerCallbackRequest();
         request.setMd5(ossDetail.getMd5());
         request.setOssFileId(ossDetail.getOssFileId());
@@ -107,5 +101,5 @@ public class OssDetailHandler {
         request.setPhone(phone);
         request.setEmail(email);
         return request;
-    }
+    }*/
 }
