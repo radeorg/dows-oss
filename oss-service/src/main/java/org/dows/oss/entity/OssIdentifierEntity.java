@@ -16,7 +16,7 @@ import java.util.Date;
 import java.lang.String;
 import java.lang.Integer;
 
-import org.dows.oss.AutoFillDataListener;
+import org.dows.rade.crud.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 /**

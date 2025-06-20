@@ -2,7 +2,6 @@ package org.dows.oss.trigger;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.callback.FileCallback;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
@@ -14,8 +13,6 @@ import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 /**
  * 文件转换触发器
  */
@@ -24,18 +21,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TxtTransformTrigger implements FileTrigger {
 
-    private final Map<String, FileCallback> fileCallbackMap;
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
 
     @Override
-    public void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel) {
+    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         log.info("文本文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
         try {
-            // 保存文件详情
-            OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, channel);
-
             // 解析文本
             String parseContent = FileParseUtil.convertToTxt(ossFile.getFileTempPath());
 
@@ -56,10 +49,5 @@ public class TxtTransformTrigger implements FileTrigger {
         } catch (Exception e) {
             log.error("文件上传云服务触发器异常:{}", e.getMessage());
         }
-    }
-
-    @Override
-    public FileCallback getFileCallback(String callbackType) {
-        return fileCallbackMap.get(callbackType + "FileCallback");
     }
 }

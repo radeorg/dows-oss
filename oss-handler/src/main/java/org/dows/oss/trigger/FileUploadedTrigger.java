@@ -2,7 +2,6 @@ package org.dows.oss.trigger;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dows.oss.callback.FileCallback;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
@@ -13,7 +12,6 @@ import org.dows.oss.response.CallbackResponse;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 
 /**
  * 文件上传云服务触发器
@@ -23,18 +21,14 @@ import java.util.Map;
 @Component
 public class FileUploadedTrigger implements FileTrigger {
 
-    private final Map<String, FileCallback> fileCallbackMap;
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
 
     @Override
-    public void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel) {
+    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         log.info("文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
         try {
-            // 保存文件详情
-            OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, channel);
-
             // 文件上传云服务
             OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
             OssInfo info = ossUploaderHandler.uploadOriginalFile(request);
@@ -51,10 +45,5 @@ public class FileUploadedTrigger implements FileTrigger {
         } catch (Exception e) {
             log.error("文件上传云服务触发器异常:{}", e.getMessage());
         }
-    }
-
-    @Override
-    public FileCallback getFileCallback(String callbackType) {
-        return fileCallbackMap.get(callbackType + "FileCallback");
     }
 }

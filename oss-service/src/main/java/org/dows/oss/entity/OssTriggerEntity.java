@@ -7,7 +7,7 @@ import com.mybatisflex.annotation.Table;
 import com.mybatisflex.core.keygen.KeyGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
-import org.dows.oss.AutoFillDataListener;
+import org.dows.rade.crud.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 
 import java.util.Date;

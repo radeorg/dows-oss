@@ -6,6 +6,7 @@ import com.mybatisflex.spring.boot.MyBatisFlexCustomizer;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dows.rade.crud.AutoFillDataListener;
 import org.dows.rade.crud.BaseEntity;
 import org.dows.rade.crud.FieldFillListener;
 import org.springframework.beans.factory.annotation.Value;

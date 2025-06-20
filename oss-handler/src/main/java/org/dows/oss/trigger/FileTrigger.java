@@ -13,9 +13,14 @@ import org.dows.rade.util.SpringUtil;
 
 public interface FileTrigger {
 
-    void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel);
+    void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity);
 
-    FileCallback getFileCallback(String callbackType);
+    default FileCallback getFileCallback(String callbackType){
+        if (StringUtils.isNotEmpty(callbackType)) {
+            return SpringUtil.getBean(callbackType + "FileCallback");
+        }
+        return null;
+    }
 
     default CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         return callback(ossDetail, ossTriggerEntity, null);
