@@ -12,8 +12,9 @@ import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
-import org.dows.rade.util.SpringUtil;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 文件转换触发器
@@ -23,14 +24,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TxtTransformTrigger implements FileTrigger {
 
+    private final Map<String, FileCallback> fileCallbackMap;
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
 
     @Override
-    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel) {
         log.info("文本文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
         try {
+            // 保存文件详情
+            OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, channel);
+
             // 解析文本
             String parseContent = FileParseUtil.convertToTxt(ossFile.getFileTempPath());
 
@@ -53,4 +58,8 @@ public class TxtTransformTrigger implements FileTrigger {
         }
     }
 
+    @Override
+    public FileCallback getFileCallback(String callbackType) {
+        return fileCallbackMap.get(callbackType + "FileCallback");
+    }
 }

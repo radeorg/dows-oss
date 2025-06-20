@@ -4,10 +4,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssFileEntity;
-import org.dows.oss.entity.OssIdentifierEntity;
-import org.dows.oss.request.OssUploadRequest;
 import org.dows.oss.service.OssFileService;
-import org.dows.oss.utils.CommonUtil;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -22,16 +19,7 @@ public class OssFileHandler {
 
     private final OssFileService ossFileService;
 
-    public OssFileEntity saveOssFile(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifierEntity, String filePath, String fileName, Long fileSize){
-        OssFileEntity entity = new OssFileEntity();
-        entity.setFileName(fileName);
-        entity.setMd5(info.getMd5());
-        entity.setFileExt(CommonUtil.getFileExt(fileName));
-        entity.setFileSize(fileSize);
-        entity.setFileTempPath(filePath);
-        entity.setBatchNo(CommonUtil.formatDate(new Date(), "yyMMddHH"));
-        entity.setAppId(ossIdentifierEntity.getAppId());
-        entity.setSource(ossIdentifierEntity.getSource());
+    public OssFileEntity saveOssFile(OssFileEntity entity) {
         ossFileService.save(entity);
         return entity;
     }

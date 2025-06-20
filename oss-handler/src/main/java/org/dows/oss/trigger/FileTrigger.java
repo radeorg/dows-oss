@@ -1,5 +1,6 @@
 package org.dows.oss.trigger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dows.oss.callback.FileCallback;
 import org.dows.oss.constant.PatternConstant;
 import org.dows.oss.entity.OssDetailEntity;
@@ -10,15 +11,11 @@ import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.util.SpringUtil;
 
-public interface FileTrigger/* extends Runnable*/ {
+public interface FileTrigger {
 
-    void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity);
+    void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel);
 
-    default FileCallback getFileCallback(String callbackType){
-        // todo 是否为空判断？
-        return SpringUtil.getBean(callbackType + "FileCallback");
-    }
-
+    FileCallback getFileCallback(String callbackType);
 
     default CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
         return callback(ossDetail, ossTriggerEntity, null);
@@ -33,14 +30,14 @@ public interface FileTrigger/* extends Runnable*/ {
                 String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
                 OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
 
-                //FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
                 FileCallback fileCallback = getFileCallback(split[0]);
-                return fileCallback.callback(request, ossTriggerEntity);
+                if (fileCallback != null) {
+                    return fileCallback.callback(request, ossTriggerEntity);
+                }
             }
         }
         return null;
     }
-
 
     default OssUploadTriggerCallbackRequest toTriggerCallbackRequest(OssDetailEntity ossDetail, String phone, String email) {
         OssUploadTriggerCallbackRequest request = new OssUploadTriggerCallbackRequest();

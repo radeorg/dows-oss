@@ -3,7 +3,6 @@ package org.dows.oss.trigger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.callback.FileCallback;
-import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.handler.OssFileHandler;
@@ -21,23 +20,25 @@ import java.util.Map;
 public class FilePreloadTrigger implements FileTrigger{
 
     private final Map<String, FileCallback> fileCallbackMap;
-
     private final OssFileHandler ossFileHandler;
 
-    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel) {
         log.info("文件预上传触发器：{}", ossTriggerEntity.getTrigger());
 
-        //todo ossFile的save与callback放在一个事物里
-        //ossFile = ossFileHandler.saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
+        ossFile = ossFileHandler.saveOssFile(ossFile);
         String callbackTarget = ossTriggerEntity.getCallbackTarget();
         if (!callbackTarget.isEmpty()) {
             String[] split = callbackTarget.split(":");
 
-            FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
+            FileCallback fileCallback = getFileCallback(split[0]);
             fileCallback.callback(toOssUploadResponse(ossFile), ossTriggerEntity);
         }
     }
 
+    @Override
+    public FileCallback getFileCallback(String callbackType) {
+        return fileCallbackMap.get(callbackType + "FileCallback");
+    }
 
     private OssUploadCallbackRequest toOssUploadResponse(OssFileEntity ossFileEntity){
         OssUploadCallbackRequest response = new OssUploadCallbackRequest();

@@ -16,28 +16,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OssDetailHandler {
 
-    //private final Map<String, FileCallback> fileCallbackMap;
     private final OssDetailService ossDetailService;
-
-    /*public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity){
-        return callback(ossDetail, ossTriggerEntity, null);
-    }
-
-    public CallbackResponse callback(OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity, String content){
-        String callbackTarget = ossTriggerEntity.getCallbackTarget();
-        if (!callbackTarget.isEmpty()) {
-            String[] split = callbackTarget.split(":");
-            if (split.length > 0) {
-                String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
-                String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
-                OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
-
-                FileCallback fileCallback = fileCallbackMap.get(split[0] + "FileCallback");
-                return fileCallback.callback(request, ossTriggerEntity);
-            }
-        }
-        return null;
-    }*/
 
     public OssDetailEntity saveOssDetail(OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
         OssDetailEntity detailEntity = new OssDetailEntity();
@@ -85,21 +64,4 @@ public class OssDetailHandler {
         request.setChannel(ossDetail.getChannel());
         return request;
     }
-
-    /*private OssUploadTriggerCallbackRequest toTriggerCallbackRequest(OssDetailEntity ossDetail, String phone, String email){
-        OssUploadTriggerCallbackRequest request = new OssUploadTriggerCallbackRequest();
-        request.setMd5(ossDetail.getMd5());
-        request.setOssFileId(ossDetail.getOssFileId());
-        request.setOssDetailId(ossDetail.getOssDetailId());
-        request.setAppId(ossDetail.getAppId());
-        request.setTrigger(ossDetail.getTrigger());
-        request.setFilePath(ossDetail.getBasePath());
-        request.setFileExt(ossDetail.getFileExt());
-        request.setFileLink(ossDetail.getFileLink());
-        request.setFileSize(ossDetail.getFileSize());
-        request.setStoreType(ossDetail.getChannel());
-        request.setPhone(phone);
-        request.setEmail(email);
-        return request;
-    }*/
 }

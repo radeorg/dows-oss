@@ -34,7 +34,7 @@ public class OssTriggerHandler {
     /**
      * 根据ossIdentifierId获oss取用户配置触发器（过期时间5分钟）
      */
-//    @Cacheable(value = "triggerListCache#3000", key = "'ossIdentifierId:' + #ossIdentifierId")
+    @Cacheable(value = "triggerListCache#3000", key = "'ossIdentifierId:' + #ossIdentifierId")
     public List<OssTriggerEntity> triggerList(Long ossIdentifierId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .eq(OssTriggerEntity::getOssIdentifierId, ossIdentifierId)

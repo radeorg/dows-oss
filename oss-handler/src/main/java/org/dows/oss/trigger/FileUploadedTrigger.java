@@ -11,8 +11,9 @@ import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.rade.oss.OssInfo;
-import org.dows.rade.util.SpringUtil;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 文件上传云服务触发器
@@ -22,15 +23,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileUploadedTrigger implements FileTrigger {
 
+    private final Map<String, FileCallback> fileCallbackMap;
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
 
-
     @Override
-    public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
+    public void trigger(OssFileEntity ossFile, OssTriggerEntity ossTriggerEntity, String channel) {
         log.info("文件上传云服务触发器：{}", ossTriggerEntity.getTrigger());
 
         try {
+            // 保存文件详情
+            OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, channel);
+
             // 文件上传云服务
             OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
             OssInfo info = ossUploaderHandler.uploadOriginalFile(request);
@@ -49,5 +53,8 @@ public class FileUploadedTrigger implements FileTrigger {
         }
     }
 
-
+    @Override
+    public FileCallback getFileCallback(String callbackType) {
+        return fileCallbackMap.get(callbackType + "FileCallback");
+    }
 }
