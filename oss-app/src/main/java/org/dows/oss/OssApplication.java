@@ -3,12 +3,14 @@ package org.dows.oss;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.rade.init.AppInstance;
 import org.dows.rade.util.PathUtil;
+import org.dows.rade.util.SpringUtil;
 import org.dromara.autotable.springboot.EnableAutoTable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -79,5 +81,10 @@ public class OssApplication implements AppInstance {
         thread.setDaemon(false);
         // 启动线程
         thread.start();
+    }
+
+    @Bean
+    SpringUtil springUtil() {
+        return new SpringUtil();
     }
 }

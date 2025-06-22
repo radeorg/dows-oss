@@ -9,6 +9,9 @@ import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -22,6 +25,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class FileParseUtil {
 
+    private static final int BUFFER_SIZE = 8192;
     // 中英日多语言页眉页脚识别正则
     private static final Map<Locale, List<Pattern>> LOCALE_PATTERNS = Map.of(
             Locale.CHINA, Arrays.asList(
@@ -61,6 +65,30 @@ public class FileParseUtil {
      */
     public static String convertToMarkdown(String pdfPath) throws IOException {
         return parseToMarkdown(convertToTxt(pdfPath));
+    }
+
+    public static String calculateMD5(InputStream is) throws IOException {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int bytesRead;
+
+            while ((bytesRead = is.read(buffer)) != -1) {
+                md.update(buffer, 0, bytesRead);
+            }
+
+            return bytesToHex(md.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 algorithm not available", e);
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     /**

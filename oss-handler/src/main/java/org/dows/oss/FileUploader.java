@@ -15,6 +15,7 @@ import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
 import org.dows.oss.trigger.FileTrigger;
 import org.dows.oss.utils.CommonUtil;
+import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.context.AppContext;
 import org.dows.rade.oss.OssException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -79,13 +80,10 @@ public class FileUploader {
         log.info("文件流上传");
         OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
-        OssFileEntity ossFile = ossFileHandler.getOneByMd5(request.getMd5());
-        if (ossFile != null) {
-            throw new OssException(OssExceptionStatusCode.FILE_EXIST);
-        }
+        String md5 = checkFileMd5(is);
         String originalFileName = request.getFileName();
         String targetDirectory = getTargetDirectory(request.getSource());
-        String targetFilePath = getFilePath(targetDirectory, originalFileName, request.getMd5());
+        String targetFilePath = getFilePath(targetDirectory, originalFileName, md5);
         File dest = new File(targetFilePath);
         File parentDir = dest.getParentFile();
         try {
@@ -109,6 +107,9 @@ public class FileUploader {
         }
     }
 
+    /**
+     * 上传本地过期文件
+     */
     public void deleteExpireLocalFile(){
         List<OssFileEntity> ossFileEntities = ossFileHandler.listExpireOssFiles();
         if (ossFileEntities != null && !ossFileEntities.isEmpty()) {
@@ -171,6 +172,21 @@ public class FileUploader {
         result.put("failNum", ossUploadRequest.getInfos().size() - successNum);
         result.put("failInfo", failInfo);
         return result;
+    }
+
+    private String checkFileMd5(InputStream is){
+        String md5;
+        try {
+            md5 = FileParseUtil.calculateMD5(is);
+        } catch (IOException e) {
+            log.error("文件加密异常：{}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+        OssFileEntity ossFile = ossFileHandler.getOneByMd5(md5);
+        if (ossFile != null) {
+            throw new OssException(OssExceptionStatusCode.FILE_EXIST);
+        }
+        return md5;
     }
 
     /**
