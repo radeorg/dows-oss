@@ -95,7 +95,7 @@ public class FileUploader {
             FileUtil.writeFromStream(is, dest);
 
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
-            info.setMd5(request.getMd5());
+            info.setMd5(md5);
 
             // 保存文件及执行触发器
             trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
