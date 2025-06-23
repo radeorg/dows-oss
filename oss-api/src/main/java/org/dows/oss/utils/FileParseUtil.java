@@ -8,8 +8,12 @@ import org.commonmark.node.*;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -132,5 +136,13 @@ public class FileParseUtil {
                 .extensions(List.of(TablesExtension.create()))
                 .build()
                 .render(document);
+    }
+
+    public static void writeByteArrayToFile(File dest, byte[] data) throws IOException {
+        Path path = dest.toPath();
+        // 自动创建父目录
+        Files.createDirectories(path.getParent());
+        // 写入文件（覆盖模式）
+        Files.write(path, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 }

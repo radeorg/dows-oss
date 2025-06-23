@@ -1,6 +1,7 @@
 package org.dows.oss;
 
-import cn.hutool.core.io.FileUtil;
+import com.qcloud.cos.utils.IOUtils;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.dows.oss.utils.FileParseUtil;
 
 import java.io.File;
@@ -20,12 +21,20 @@ public class Test {
 //        System.out.println(parseContent);
 
 
-        try (InputStream is1 = new FileInputStream(filePath)) {
-            String md5 = FileParseUtil.calculateMD5(is1);
-            System.out.println(md5);
+        // 方案1：重新打开流（推荐）
+        try (InputStream isForMd5 = new FileInputStream(filePath)){
 
-            File dest = new File("C:\\Users\\Administrator\\radeorg\\uim\\250604\\" + md5 + ".pdf");
-            FileUtil.writeFromStream(is1, dest);
+            // 使用字节数组缓存（适合小文件）
+            byte[] fileBytes = IOUtils.toByteArray(isForMd5); // 先完整读取流
+            String md5 = DigestUtils.md5Hex(fileBytes); // 计算MD5
+
+            String path = "C:\\Users\\Administrator\\radeorg\\uim\\250604\\" + md5 + ".pdf";
+            File dest = new File(path);
+
+            // 写入文件
+            FileParseUtil.writeByteArrayToFile(dest, fileBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

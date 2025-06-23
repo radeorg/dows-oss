@@ -1,8 +1,11 @@
 package org.dows.oss;
 
 import cn.hutool.core.io.FileUtil;
+import com.qcloud.cos.utils.IOUtils;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.logging.log4j.core.util.FileUtils;
 import org.dows.oss.constant.OssExceptionStatusCode;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
@@ -80,30 +83,27 @@ public class FileUploader {
         log.info("文件流上传");
         OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
-        String md5 = checkFileMd5(is);
-        String originalFileName = request.getFileName();
-        String targetDirectory = getTargetDirectory(request.getSource());
-        String targetFilePath = getFilePath(targetDirectory, originalFileName, md5);
-        File dest = new File(targetFilePath);
-        File parentDir = dest.getParentFile();
         try {
-            if (!parentDir.exists()) {
-                if (!parentDir.mkdirs()) {
-                    throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
-                }
-            }
-            FileUtil.writeFromStream(is, dest);
+            // 使用字节数组缓存（适合小文件）
+            byte[] fileBytes = IOUtils.toByteArray(is); // 先完整读取流
+            String md5 = DigestUtils.md5Hex(fileBytes); // 计算MD5
 
+            String originalFileName = request.getFileName();
+            String targetDirectory = getTargetDirectory(request.getSource());
+            String targetFilePath = getFilePath(targetDirectory, originalFileName, md5);
+            File dest = new File(targetFilePath);
+
+            // 写入文件
+            FileParseUtil.writeByteArrayToFile(dest, fileBytes);
+
+            // 构建上传信息
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
             info.setMd5(md5);
 
             // 保存文件及执行触发器
             trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
         } catch (Exception e) {
-            log.error("文件流上传失败: {}", originalFileName, e);
-            if (dest.exists() && !dest.delete()) {
-                log.error("文件流上传删除失败: {}", dest.getAbsolutePath());
-            }
+            log.error("文件流上传失败: {}", request.getFileName(), e);
         }
     }
 
