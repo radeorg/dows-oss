@@ -17,4 +17,7 @@ public class OssUploadCallbackRequest {
 
     @Schema(description = "应用ID")
     private String appId;
+
+    @Schema(description = "操作人ID")
+    private Long operatorId;
 }

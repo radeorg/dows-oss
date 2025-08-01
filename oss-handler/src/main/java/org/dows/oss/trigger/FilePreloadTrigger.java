@@ -39,6 +39,7 @@ public class FilePreloadTrigger implements FileTrigger{
         response.setFileName(ossFileEntity.getFileName());
         response.setAppId(ossFileEntity.getAppId());
         response.setBatchNo(ossFileEntity.getBatchNo());
+        response.setOperatorId(ossFileEntity.getOperatorId());
         return response;
     }
 }
