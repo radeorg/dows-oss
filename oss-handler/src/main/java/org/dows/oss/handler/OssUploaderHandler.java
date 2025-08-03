@@ -70,6 +70,11 @@ public class OssUploaderHandler {
         return null;
     }
 
+    public String downloadFile(String filePath) {
+        // todo
+        return "";
+    }
+
     private String getFileName(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("文件不能为空");

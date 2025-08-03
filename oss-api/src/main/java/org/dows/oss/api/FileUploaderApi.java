@@ -39,4 +39,10 @@ public interface FileUploaderApi {
      * 文件流形式上传文件
      */
     void uploadFile(InputStream is, OssUploadInputStreamRequest request);
+
+    /**
+     * 根据文件地址下载文件
+     */
+    @PostMapping("/v1/open/oss/download")
+    String downloadFile(@RequestParam String filePath);
 }

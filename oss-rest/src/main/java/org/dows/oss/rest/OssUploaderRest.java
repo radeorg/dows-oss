@@ -40,4 +40,9 @@ public class OssUploaderRest implements FileUploaderApi {
     public void uploadFile(InputStream is, OssUploadInputStreamRequest request) {
         fileUploader.upload(is, request);
     }
+
+    @Override
+    public String downloadFile(String filePath) {
+        return fileUploader.downloadFile(filePath);
+    }
 }

@@ -1,11 +1,9 @@
 package org.dows.oss;
 
-import cn.hutool.core.io.FileUtil;
 import com.qcloud.cos.utils.IOUtils;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.logging.log4j.core.util.FileUtils;
 import org.dows.oss.constant.OssExceptionStatusCode;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
@@ -14,6 +12,7 @@ import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.handler.OssDetailHandler;
 import org.dows.oss.handler.OssFileHandler;
 import org.dows.oss.handler.OssTriggerHandler;
+import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
 import org.dows.oss.trigger.FileTrigger;
@@ -48,6 +47,7 @@ public class FileUploader {
     private final OssTriggerHandler ossTriggerHandler;
     private final OssFileHandler ossFileHandler;
     private final OssDetailHandler ossDetailHandler;
+    private final OssUploaderHandler ossUploaderHandler;
 
     /*
         此处通过构造器注入bean原因：
@@ -58,12 +58,14 @@ public class FileUploader {
                         @Qualifier("fileUploadTaskExecutor") ThreadPoolTaskExecutor fileUploadTaskExecutor,
                         OssTriggerHandler ossTriggerHandler,
                         OssFileHandler ossFileHandler,
-                        OssDetailHandler ossDetailHandler) {
+                        OssDetailHandler ossDetailHandler,
+                        OssUploaderHandler ossUploaderHandler) {
         this.fileTriggerMap = fileTriggerMap;
         this.fileUploadTaskExecutor = fileUploadTaskExecutor;
         this.ossTriggerHandler = ossTriggerHandler;
         this.ossFileHandler = ossFileHandler;
         this.ossDetailHandler = ossDetailHandler;
+        this.ossUploaderHandler = ossUploaderHandler;
     }
 
     /**
@@ -121,6 +123,10 @@ public class FileUploader {
                 }
             }
         }
+    }
+
+    public String downloadFile(String filePath) {
+        return ossUploaderHandler.downloadFile(filePath);
     }
 
     /**
