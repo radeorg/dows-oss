@@ -11,7 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -75,30 +77,25 @@ public class OssUploaderHandler {
 
     public String downloadFile(String filePath) {
         try {
-            return getLocalContent(filePath);
+            filePath = presignedCosViewUrl(filePath);
+            HttpsURLConnection connection = (HttpsURLConnection) new URL(filePath).openConnection();
+            connection.setRequestMethod("GET");
+
+            try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(connection.getInputStream()))) {
+
+                StringBuilder content = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    content.append(line).append("\n");
+                }
+                return content.toString();
+            } finally {
+                connection.disconnect();
+            }
         } catch (IOException e) {
-            log.error("下载文件失败: {}", filePath, e);
             throw new RuntimeException(e);
         }
-
-    }
-
-    // 获取本地文件内容
-    private String getLocalContent(String filePath) throws IOException {
-        try (BufferedReader reader = Files.newBufferedReader(
-                Paths.get(filePath), StandardCharsets.UTF_8)) {
-            return readContent(reader);
-        }
-    }
-
-    // 通用内容读取方法
-    private String readContent(BufferedReader reader) throws IOException {
-        StringBuilder content = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            content.append(line).append("\n");
-        }
-        return content.toString();
     }
 
     private String getFileName(MultipartFile file) {

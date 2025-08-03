@@ -126,7 +126,7 @@ public class FileUploader {
     }
 
     public String downloadFile(String filePath) {
-        return ossUploaderHandler.downloadFile(System.getProperty("user.home") + File.separator + filePath);
+        return ossUploaderHandler.downloadFile(filePath);
     }
 
     /**
