@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Slf4j
@@ -71,8 +74,31 @@ public class OssUploaderHandler {
     }
 
     public String downloadFile(String filePath) {
-        // todo
-        return "";
+        try {
+            return getLocalContent(filePath);
+        } catch (IOException e) {
+            log.error("下载文件失败: {}", filePath, e);
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    // 获取本地文件内容
+    private String getLocalContent(String filePath) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(
+                Paths.get(filePath), StandardCharsets.UTF_8)) {
+            return readContent(reader);
+        }
+    }
+
+    // 通用内容读取方法
+    private String readContent(BufferedReader reader) throws IOException {
+        StringBuilder content = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            content.append(line).append("\n");
+        }
+        return content.toString();
     }
 
     private String getFileName(MultipartFile file) {

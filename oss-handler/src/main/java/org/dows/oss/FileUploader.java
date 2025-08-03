@@ -110,7 +110,7 @@ public class FileUploader {
     }
 
     /**
-     * 上传本地过期文件
+     * 删除本地过期文件
      */
     public void deleteExpireLocalFile(){
         List<OssFileEntity> ossFileEntities = ossFileHandler.listExpireOssFiles();
@@ -126,7 +126,7 @@ public class FileUploader {
     }
 
     public String downloadFile(String filePath) {
-        return ossUploaderHandler.downloadFile(filePath);
+        return ossUploaderHandler.downloadFile(System.getProperty("user.home") + File.separator + filePath);
     }
 
     /**
