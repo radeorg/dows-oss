@@ -51,7 +51,7 @@ public interface FileTrigger {
         request.setOssDetailId(ossDetail.getOssDetailId());
         request.setAppId(ossDetail.getAppId());
         request.setTrigger(ossDetail.getTrigger());
-        request.setFilePath(ossDetail.getBasePath());
+        request.setFilePath(ossDetail.getFilePath());
         request.setFileExt(ossDetail.getFileExt());
         request.setFileLink(ossDetail.getFileLink());
         request.setFileSize(ossDetail.getFileSize());
