@@ -1,5 +1,6 @@
 package org.dows.oss.handler;
 
+import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssDetailEntity;
@@ -21,12 +22,35 @@ public class OssDetailHandler {
     public OssDetailEntity saveOssDetail(OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
         OssDetailEntity detailEntity = new OssDetailEntity();
         detailEntity.setOssFileId(ossFile.getOssFileId());
-        detailEntity.setAppId(trigger.getAppId());
+        detailEntity.setAppId(ossFile.getAppId());
         detailEntity.setTrigger(trigger.getTrigger());
         detailEntity.setChannel(channel);
         detailEntity.setBasePath(trigger.getBasePath());
         detailEntity.setSeq(trigger.getSeq());
         detailEntity.setRetryCount(trigger.getRetryCount());
+        ossDetailService.save(detailEntity);
+        return detailEntity;
+    }
+
+    public OssDetailEntity saveOssDetail(OssFileEntity oldFile, OssFileEntity ossFile, OssTriggerEntity trigger, String channel) {
+        OssDetailEntity detailEntity = new OssDetailEntity();
+        detailEntity.setOssFileId(ossFile.getOssFileId());
+        detailEntity.setAppId(ossFile.getAppId());
+        detailEntity.setTrigger(trigger.getTrigger());
+        detailEntity.setChannel(channel);
+        detailEntity.setBasePath(trigger.getBasePath());
+        detailEntity.setSeq(trigger.getSeq());
+        detailEntity.setRetryCount(trigger.getRetryCount());
+
+        OssDetailEntity detail = getByOldFileIdAndTrigger(oldFile, trigger.getTrigger());
+        if (detail != null) {
+            detailEntity.setMd5(detail.getMd5());
+            detailEntity.setFileSize(detail.getFileSize());
+            detailEntity.setFileName(detail.getFileName());
+            detailEntity.setFilePath(detail.getFilePath());
+            detailEntity.setFileLink(detail.getFileLink());
+            detailEntity.setFileExt(detail.getFileExt());
+        }
         ossDetailService.save(detailEntity);
         return detailEntity;
     }
@@ -63,5 +87,13 @@ public class OssDetailHandler {
         request.setFilePath(ossDetail.getBasePath());
         request.setChannel(ossDetail.getChannel());
         return request;
+    }
+
+    public OssDetailEntity getByOldFileIdAndTrigger(OssFileEntity oldFile, String trigger) {
+        return ossDetailService.getOne(QueryWrapper.create()
+                .eq(OssDetailEntity::getOssFileId, oldFile.getOssFileId())
+                .eq(OssDetailEntity::getAppId, oldFile.getAppId())
+                .eq(OssDetailEntity::getTrigger, trigger)
+        );
     }
 }

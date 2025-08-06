@@ -11,7 +11,7 @@ import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.util.SpringUtil;
 
-public interface FileTrigger {
+public interface RepeatFileTrigger {
 
     void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity);
 

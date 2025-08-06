@@ -31,6 +31,12 @@ public class OssTriggerHandler {
         return ossIdentifierService.getOne(queryWrapper);
     }
 
+    @Cacheable(value = "ossIdentifierCache#3000", key = "'source:' + #source")
+    public OssIdentifierEntity getOssIdentifierBySource(String source) {
+        return ossIdentifierService.getOne(QueryWrapper.create()
+                .eq(OssIdentifierEntity::getSource, source));
+    }
+
     /**
      * 根据ossIdentifierId获oss取用户配置触发器（过期时间5分钟）
      */

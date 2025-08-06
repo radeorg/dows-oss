@@ -90,20 +90,25 @@ public class FileUploader {
             byte[] fileBytes = IOUtils.toByteArray(is); // 先完整读取流
             String md5 = DigestUtils.md5Hex(fileBytes); // 计算MD5
 
-            String originalFileName = request.getFileName();
-            String targetDirectory = getTargetDirectory(request.getSource());
-            String targetFilePath = getFilePath(targetDirectory, originalFileName, md5);
-            File dest = new File(targetFilePath);
-
-            // 写入文件
-            FileParseUtil.writeByteArrayToFile(dest, fileBytes);
-
             // 构建上传信息
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
             info.setMd5(md5);
 
-            // 保存文件及执行触发器
-            trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
+            OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
+            if (ossFile != null) {
+                repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
+            } else {
+                String originalFileName = request.getFileName();
+                String targetDirectory = getTargetDirectory(request.getSource());
+                String targetFilePath = getFilePath(targetDirectory, originalFileName, md5);
+                File dest = new File(targetFilePath);
+
+                // 写入文件
+                FileParseUtil.writeByteArrayToFile(dest, fileBytes);
+
+                // 保存文件及执行触发器
+                trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
+            }
         } catch (Exception e) {
             log.error("文件流上传失败: {}", request.getFileName(), e);
         }
@@ -136,39 +141,53 @@ public class FileUploader {
         int successNum = 0;
         Map<String, String> failInfo = new HashMap<>();
         List<String> distinctMd5s = new ArrayList<>();
-        List<String> existUploaderFileMd5 = queryExistUploaderFileMd5(ossUploadRequest);
+        Map<String, OssFileEntity> existUploaderFileMd5 = queryExistUploaderFileMd5(ossUploadRequest);
         for (OssUploadRequest.OssUploadInfo info : ossUploadRequest.getInfos()) {
             String md5 = info.getMd5();
-            if (!distinctMd5s.contains(md5) && !existUploaderFileMd5.contains(md5)) {
-                String fileName = getFileName(info.getFile());
-                String targetDirectory = getTargetDirectory(ossUploadRequest.getSource());
-                String filePath = getFilePath(targetDirectory, fileName, md5);
-                File dest = new File(filePath);
-                File parentDir = dest.getParentFile();
-                try {
-                    if (!parentDir.exists()) {
-                        if (!parentDir.mkdirs()) {
-                            throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
+            if (!distinctMd5s.contains(md5)) {
+                // 同一份文件在云服务器只存在一份，但是可以有多条企业上传记录
+                if (existUploaderFileMd5.containsKey(md5)) {
+                    OssFileEntity ossFile = existUploaderFileMd5.get(md5);
+                    if (ossFile.getAppId().equals(AppContext.getAppId())) {
+                        failInfo.put(info.getMd5(), "文件重复");
+                    } else {
+                        // 执行触发器
+                        info.setIsExist(true);
+                        String fileName = getFileName(info.getFile());
+                        repeatTrigger(info, ossIdentifierEntity, ossFile, fileName);
+
+                        successNum++;
+                    }
+
+                    distinctMd5s.add(md5);
+                } else {
+                    String fileName = getFileName(info.getFile());
+                    String targetDirectory = getTargetDirectory(ossUploadRequest.getSource());
+                    String filePath = getFilePath(targetDirectory, fileName, md5);
+                    File dest = new File(filePath);
+                    File parentDir = dest.getParentFile();
+                    try {
+                        if (!parentDir.exists()) {
+                            if (!parentDir.mkdirs()) {
+                                throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
+                            }
                         }
-                    }
-                    info.getFile().transferTo(dest);
+                        info.getFile().transferTo(dest);
 
-                    // 执行触发器
-                    trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
+                        // 执行触发器
+                        trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
 
-                    successNum++;
-                } catch (Exception e) {
-                    log.error("文件上传失败: {}", fileName, e);
-                    if (dest.exists() && !dest.delete()) {
-                        log.error("文件删除失败: {}", dest.getAbsolutePath());
+                        successNum++;
+                    } catch (Exception e) {
+                        log.error("文件上传失败: {}", fileName, e);
+                        if (dest.exists() && !dest.delete()) {
+                            log.error("文件删除失败: {}", dest.getAbsolutePath());
+                        }
+                        failInfo.put(info.getMd5(), e.getMessage());
                     }
-                    failInfo.put(info.getMd5(), e.getMessage());
                 }
             } else {
                 failInfo.put(info.getMd5(), "文件重复");
-            }
-            if (!distinctMd5s.contains(md5)) {
-                distinctMd5s.add(md5);
             }
         }
 
@@ -180,25 +199,10 @@ public class FileUploader {
         return result;
     }
 
-    private String checkFileMd5(InputStream is){
-        String md5;
-        try {
-            md5 = FileParseUtil.calculateMD5(is);
-        } catch (IOException e) {
-            log.error("文件加密异常：{}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-        OssFileEntity ossFile = ossFileHandler.getOneByMd5(md5);
-        if (ossFile != null) {
-            throw new OssException(OssExceptionStatusCode.FILE_EXIST);
-        }
-        return md5;
-    }
-
     /**
      * 查询在数据库中存在的Md5
      */
-    private List<String> queryExistUploaderFileMd5(OssUploadRequest ossUploadRequest){
+    private Map<String, OssFileEntity> queryExistUploaderFileMd5(OssUploadRequest ossUploadRequest){
         // 过滤出不重复、不为空的md5集合
         List<String> md5s = ossUploadRequest.getInfos().stream()
                 .map(OssUploadRequest.OssUploadInfo::getMd5)
@@ -206,18 +210,18 @@ public class FileUploader {
                 .distinct()
                 .toList();
 
-        List<String> fileMd5s = new ArrayList<>();
+        Map<String, OssFileEntity> fileMd5s = new HashMap<>();
         List<OssFileEntity> ossFiles = ossFileHandler.listByMd5s(md5s);
         if (ossFiles != null && !ossFiles.isEmpty()) {
             for (OssFileEntity ossUploaderEntity : ossFiles) {
-                fileMd5s.add(ossUploaderEntity.getMd5());
+                fileMd5s.put(ossUploaderEntity.getMd5(), ossUploaderEntity);
             }
         }
         return fileMd5s;
     }
 
     private OssIdentifierEntity validateOssIdentifier(String source, String secretId, String secretKey){
-        OssIdentifierEntity ossIdentifierEntity = ossTriggerHandler.getOssIdentifierBySourceAndAppId(source, AppContext.getAppId());
+        OssIdentifierEntity ossIdentifierEntity = ossTriggerHandler.getOssIdentifierBySource(source);
         if (ossIdentifierEntity == null) {
             throw new OssException(OssExceptionStatusCode.OSS_IDENTIFIER_NOT_FOUND);
         }
@@ -258,7 +262,8 @@ public class FileUploader {
         return fileName;
     }
 
-    private void trigger(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifier, String filePath, String fileName, Long fileSize) {
+    private void trigger(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifier,
+                         String filePath, String fileName, Long fileSize) {
         List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
         if (ossTriggerEntities != null) {
             OssFileEntity ossFile = new OssFileEntity();
@@ -273,6 +278,33 @@ public class FileUploader {
                         OssFileEntity finalOssFile = ossFile;
                         fileUploadTaskExecutor.execute(() -> {
                             fileTrigger.trigger(finalOssFile, ossDetail, ossTriggerEntity);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    private void repeatTrigger(OssUploadRequest.OssUploadInfo info,
+                               OssIdentifierEntity ossIdentifier,
+                               OssFileEntity oldFile,
+                               String fileName) {
+        List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
+        if (ossTriggerEntities != null) {
+            OssFileEntity ossFile = new OssFileEntity();
+            for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
+                if (ossTriggerEntity != null) {
+                    String triggerName = ossTriggerEntity.getTrigger();
+                    triggerName = "repeat" + triggerName.substring(0, 1).toUpperCase() + triggerName.substring(1);
+                    FileTrigger fileTrigger = fileTriggerMap.get(triggerName);
+                    if (ossTriggerEntity.getSeq() == 1) {
+                        ossFile = ossFileHandler.saveOssFile(info, ossIdentifier,
+                                oldFile.getFileTempPath(), fileName, oldFile.getFileSize());
+                        fileTrigger.trigger(ossFile, null, ossTriggerEntity);
+                    } else {
+                        OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(oldFile, ossFile, ossTriggerEntity, ossIdentifier.getChannel());
+                        fileUploadTaskExecutor.execute(() -> {
+                            fileTrigger.trigger(null, ossDetail, ossTriggerEntity);
                         });
                     }
                 }

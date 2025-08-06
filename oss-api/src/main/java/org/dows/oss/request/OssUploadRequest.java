@@ -30,5 +30,11 @@ public class OssUploadRequest {
 
         @Schema(description = "文件")
         MultipartFile file;
+
+        @Schema(description = "应用ID")
+        String appId;
+
+        @Schema(description = "原始文件是否已存在（可能在另一个企业已上传）")
+        Boolean isExist;
     }
 }

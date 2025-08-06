@@ -30,14 +30,14 @@ public class OssFileHandler {
         entity.setFileSize(fileSize);
         entity.setFileTempPath(filePath);
         entity.setBatchNo(CommonUtil.formatDate(new Date(), "yyMMddHH"));
-        entity.setAppId(ossIdentifierEntity.getAppId());
+        entity.setAppId(info.getAppId());
         entity.setSource(ossIdentifierEntity.getSource());
         ossFileService.save(entity);
         return entity;
     }
 
-    public OssFileEntity getOneByMd5(String md5) {
-        return ossFileService.getOne(QueryWrapper.create().eq(OssFileEntity::getMd5, md5));
+    public OssFileEntity getByMd5(String md5) {
+        return ossFileService.getOne(QueryWrapper.create().in(OssFileEntity::getMd5, md5));
     }
 
     public List<OssFileEntity> listByMd5s(List<String> md5s) {
