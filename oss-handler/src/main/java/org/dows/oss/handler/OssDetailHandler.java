@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.exception.OssFileException;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.service.OssDetailService;
@@ -72,8 +73,7 @@ public class OssDetailHandler {
             if (callbackResponse.getSuccess()){
                 ossDetail.setState(1);
             } else {
-                ossDetail.setState(2);
-                ossDetail.setFailedReason(callbackResponse.getMessage());
+                throw new OssFileException(callbackResponse.getMessage());
             }
             ossDetailService.updateById(ossDetail);
         }

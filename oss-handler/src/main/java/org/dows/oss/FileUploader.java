@@ -2,28 +2,22 @@ package org.dows.oss;
 
 import com.qcloud.cos.utils.IOUtils;
 import io.micrometer.common.util.StringUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.dows.oss.constant.OssExceptionStatusCode;
-import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssIdentifierEntity;
-import org.dows.oss.entity.OssTriggerEntity;
-import org.dows.oss.handler.OssDetailHandler;
-import org.dows.oss.handler.OssFileHandler;
-import org.dows.oss.handler.OssTriggerHandler;
-import org.dows.oss.handler.OssUploaderHandler;
+import org.dows.oss.handler.*;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
-import org.dows.oss.trigger.FileTrigger;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.context.AppContext;
 import org.dows.rade.oss.OssException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -36,37 +30,16 @@ import java.util.*;
  */
 @Slf4j
 @Component
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 public class FileUploader {
 
     @Value("${rade.oss.path:/radeorg}")
     private String orgPath;
 
-    private final Map<String, FileTrigger> fileTriggerMap;
-    private final ThreadPoolTaskExecutor fileUploadTaskExecutor;
     private final OssTriggerHandler ossTriggerHandler;
     private final OssFileHandler ossFileHandler;
-    private final OssDetailHandler ossDetailHandler;
     private final OssUploaderHandler ossUploaderHandler;
-
-    /*
-        此处通过构造器注入bean原因：
-        项目中其他配置类或第三方库自动配置了线程池ThreadPoolTaskExecutor，
-        所以需要通过构造方法明确指定注入的Bean名称，否则会报找到多个bean
-     */
-    public FileUploader(Map<String, FileTrigger> fileTriggerMap,
-                        @Qualifier("fileUploadTaskExecutor") ThreadPoolTaskExecutor fileUploadTaskExecutor,
-                        OssTriggerHandler ossTriggerHandler,
-                        OssFileHandler ossFileHandler,
-                        OssDetailHandler ossDetailHandler,
-                        OssUploaderHandler ossUploaderHandler) {
-        this.fileTriggerMap = fileTriggerMap;
-        this.fileUploadTaskExecutor = fileUploadTaskExecutor;
-        this.ossTriggerHandler = ossTriggerHandler;
-        this.ossFileHandler = ossFileHandler;
-        this.ossDetailHandler = ossDetailHandler;
-        this.ossUploaderHandler = ossUploaderHandler;
-    }
+    private final FileUploaderTriggerHandler fileUploaderTriggerHandler;
 
     /**
      * 文件上传器
@@ -81,6 +54,7 @@ public class FileUploader {
     /**
      * 文件上传器
      */
+    @Transactional
     public void upload(InputStream is, OssUploadInputStreamRequest request) {
         log.info("文件流上传");
         OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
@@ -93,10 +67,11 @@ public class FileUploader {
             // 构建上传信息
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
             info.setMd5(md5);
+            info.setMd5(request.getMd5());
 
             OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
             if (ossFile != null) {
-                repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
+                fileUploaderTriggerHandler.repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
             } else {
                 String originalFileName = request.getFileName();
                 String targetDirectory = getTargetDirectory(request.getSource());
@@ -107,7 +82,7 @@ public class FileUploader {
                 FileParseUtil.writeByteArrayToFile(dest, fileBytes);
 
                 // 保存文件及执行触发器
-                trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
+                fileUploaderTriggerHandler.trigger(info, ossIdentifierEntity, targetFilePath, originalFileName, dest.length());
             }
         } catch (Exception e) {
             log.error("文件流上传失败: {}", request.getFileName(), e);
@@ -154,7 +129,7 @@ public class FileUploader {
                         // 执行触发器
                         info.setIsExist(true);
                         String fileName = getFileName(info.getFile());
-                        repeatTrigger(info, ossIdentifierEntity, ossFile, fileName);
+                        fileUploaderTriggerHandler.repeatTrigger(info, ossIdentifierEntity, ossFile, fileName);
 
                         successNum++;
                     }
@@ -175,7 +150,7 @@ public class FileUploader {
                         info.getFile().transferTo(dest);
 
                         // 执行触发器
-                        trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
+                        fileUploaderTriggerHandler.trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
 
                         successNum++;
                     } catch (Exception e) {
@@ -260,55 +235,5 @@ public class FileUploader {
             throw new IllegalArgumentException("文件名不能为空");
         }
         return fileName;
-    }
-
-    private void trigger(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifier,
-                         String filePath, String fileName, Long fileSize) {
-        List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
-        if (ossTriggerEntities != null) {
-            OssFileEntity ossFile = new OssFileEntity();
-            for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
-                if (ossTriggerEntity != null) {
-                    FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
-                    if (ossTriggerEntity.getSeq() == 1) {
-                        ossFile = ossFileHandler.saveOssFile(info, ossIdentifier, filePath, fileName, fileSize);
-                        fileTrigger.trigger(ossFile, null, ossTriggerEntity);
-                    } else {
-                        OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, ossIdentifier.getChannel());
-                        OssFileEntity finalOssFile = ossFile;
-                        fileUploadTaskExecutor.execute(() -> {
-                            fileTrigger.trigger(finalOssFile, ossDetail, ossTriggerEntity);
-                        });
-                    }
-                }
-            }
-        }
-    }
-
-    private void repeatTrigger(OssUploadRequest.OssUploadInfo info,
-                               OssIdentifierEntity ossIdentifier,
-                               OssFileEntity oldFile,
-                               String fileName) {
-        List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
-        if (ossTriggerEntities != null) {
-            OssFileEntity ossFile = new OssFileEntity();
-            for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
-                if (ossTriggerEntity != null) {
-                    String triggerName = ossTriggerEntity.getTrigger();
-                    triggerName = "repeat" + triggerName.substring(0, 1).toUpperCase() + triggerName.substring(1);
-                    FileTrigger fileTrigger = fileTriggerMap.get(triggerName);
-                    if (ossTriggerEntity.getSeq() == 1) {
-                        ossFile = ossFileHandler.saveOssFile(info, ossIdentifier,
-                                oldFile.getFileTempPath(), fileName, oldFile.getFileSize());
-                        fileTrigger.trigger(ossFile, null, ossTriggerEntity);
-                    } else {
-                        OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(oldFile, ossFile, ossTriggerEntity, ossIdentifier.getChannel());
-                        fileUploadTaskExecutor.execute(() -> {
-                            fileTrigger.trigger(null, ossDetail, ossTriggerEntity);
-                        });
-                    }
-                }
-            }
-        }
     }
 }

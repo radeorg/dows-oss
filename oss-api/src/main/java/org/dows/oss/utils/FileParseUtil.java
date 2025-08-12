@@ -50,8 +50,8 @@ public class FileParseUtil {
      */
     public static String convertToTxt(String pdfPath) throws IOException {
         StringBuilder content = new StringBuilder();
+        PdfReader reader = new PdfReader(pdfPath);
         try {
-            PdfReader reader = new PdfReader(pdfPath);
             Locale docLocale = detectLocale(reader);
             for (int i = 1; i <= reader.getNumberOfPages(); i++) {
                 String text = PdfTextExtractor.getTextFromPage(reader, i);
@@ -61,6 +61,8 @@ public class FileParseUtil {
         } catch (Exception e) {
             log.error("PDF解析失败", e);
             throw e;
+        } finally {
+            reader.close();
         }
     }
 

@@ -4,6 +4,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.exception.OssFileException;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.rade.web.Response;
 import org.springframework.aop.support.AopUtils;
@@ -40,6 +41,7 @@ public class BeanFileCallback implements FileCallback {
             log.error("BeanFileCallback callback error:{}", e.getMessage());
             response.setSuccess(false);
             response.setMessage(e.getMessage());
+            throw new OssFileException(e.getMessage());
         }
         return response;
     }

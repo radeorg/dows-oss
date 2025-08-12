@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
+import org.dows.oss.exception.OssFileException;
 import org.dows.oss.handler.OssDetailHandler;
 import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.response.CallbackResponse;
@@ -35,6 +36,7 @@ public class RepeatMdTransformTrigger implements FileTrigger {
             ossDetailHandler.updateOssDetailCallbackInfo(ossDetail, callbackResponse);
         } catch (Exception e) {
             log.error("MD文件回调业务系统触发器异常:{}", e.getMessage());
+            throw new OssFileException(e.getMessage());
         }
     }
 }
