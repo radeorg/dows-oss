@@ -23,5 +23,5 @@ public class OssUploadInputStreamRequest {
     private String fileName;
 
     @Schema(description = "应用ID")
-    private Long appId;
+    private String appId;
 }
