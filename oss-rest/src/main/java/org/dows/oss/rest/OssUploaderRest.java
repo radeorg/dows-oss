@@ -45,4 +45,9 @@ public class OssUploaderRest implements FileUploaderApi {
     public String downloadFile(String filePath) {
         return fileUploader.downloadFile(filePath);
     }
+
+    @Override
+    public void delete(String md5, String appId) {
+        fileUploader.delete(md5, appId);
+    }
 }

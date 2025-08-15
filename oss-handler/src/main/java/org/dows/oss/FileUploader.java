@@ -33,6 +33,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FileUploader {
 
+    private final OssDetailHandler ossDetailHandler;
     @Value("${rade.oss.path:/radeorg}")
     private String orgPath;
 
@@ -67,7 +68,7 @@ public class FileUploader {
             // 构建上传信息
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
             info.setMd5(md5);
-            info.setMd5(request.getMd5());
+            info.setAppId(request.getAppId());
 
             OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
             if (ossFile != null) {
@@ -107,6 +108,10 @@ public class FileUploader {
 
     public String downloadFile(String filePath) {
         return ossUploaderHandler.downloadFile(filePath);
+    }
+
+    public void delete(String md5, String appId) {
+        ossFileHandler.deleteByMd5AndAppId(md5, appId);
     }
 
     /**

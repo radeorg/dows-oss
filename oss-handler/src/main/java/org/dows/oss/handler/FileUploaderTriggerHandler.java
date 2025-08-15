@@ -98,4 +98,17 @@ public class FileUploaderTriggerHandler {
             }
         }
     }
+
+    @Transactional
+    public void recoveryTrigger(OssFileEntity ossFile, OssIdentifierEntity ossIdentifier) {
+        List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
+        if (ossTriggerEntities != null) {
+            for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
+                if (ossTriggerEntity != null && ossTriggerEntity.getSeq() == 4) {
+                    FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
+                    fileTrigger.trigger(ossFile, null, ossTriggerEntity);
+                }
+            }
+        }
+    }
 }
