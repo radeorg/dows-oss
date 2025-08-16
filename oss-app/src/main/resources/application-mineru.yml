@@ -1,0 +1,6 @@
+# MinerU API 配置
+mineru:
+  api:
+    url: https://mineru.net/api/v4/extract/task
+    key: eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI1MDMwODEzNiIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc1NTMyMTc0NCwiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiIiwib3BlbklkIjpudWxsLCJ1dWlkIjoiNGI3NTNhZTctNjMyYi00MmE5LTgwYzEtNWQzZWFlODY3NDZhIiwiZW1haWwiOiIiLCJleHAiOjE3NTY1MzEzNDR9.k3fSF9jwTobLhydOZubeSxSwRWWLNiLZF08r06pzmMFNPYQiCOWZOWVWOsYWzTRa9fjli3gVYO67x_pxePBMnw
+    timeout: 300000 # 5分钟超时
