@@ -46,7 +46,7 @@ public class OssFileHandler {
                 .eq(OssFileEntity::getMd5, md5)
                 .eq(OssFileEntity::getAppId, appId));
         if (entity != null){
-            entity.removeById();
+            ossFileService.removeById(entity.getOssFileId());
 
             ossDetailService.remove(QueryWrapper.create()
                     .eq(OssDetailEntity::getOssFileId, entity.getOssFileId()));
