@@ -6,13 +6,17 @@ import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.exception.OssFileException;
+import org.dows.oss.handler.MineruApiHandler;
 import org.dows.oss.handler.OssDetailHandler;
 import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
+import org.dows.oss.utils.DocxToMdConverterUtil;
 import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 /**
  * 文件转换触发器
@@ -24,6 +28,7 @@ public class MdTransformTrigger implements FileTrigger {
 
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
+    private final MineruApiHandler mineruApiHandler;
 
     @Override
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity)  {
@@ -33,11 +38,12 @@ public class MdTransformTrigger implements FileTrigger {
             // 解析文本
             OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
             request.setFileExt(".md");
-            String parseContent = FileParseUtil.convertToMarkdown(request.getFileLocalPath());
+            String parseContent = pdfConvertToMarkdown(ossFile.getFileExt(), ossDetail.getFileLink(), request.getFileLocalPath());
 
             // 文本上传云服务
             OssInfo info = ossUploaderHandler.uploadFileContent(request, parseContent);
             if (info != null) {
+                System.out.println("------------" + info.getFilePath());
                 // 更新文件上传链接信息
                 ossDetailHandler.updateOssDetailFileInfo(info, ossDetail);
 
@@ -50,6 +56,39 @@ public class MdTransformTrigger implements FileTrigger {
         } catch (Exception e) {
             log.error("文件上传云服务触发器异常:{}", e.getMessage());
             throw new OssFileException(e.getMessage());
+        }
+    }
+
+    private String pdfConvertToMarkdown(String fileExt, String fileLink, String filePath) throws IOException {
+        // 如果是PDF文件，则调用Mineru API解析为Markdown
+        if (".pdf".equalsIgnoreCase(fileExt)) {
+            try {
+                return FileParseUtil.convertToMarkdown(filePath);
+            } catch (Exception e) {
+                log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
+                try {
+                    // 提交PDF解析任务
+                    String taskId = mineruApiHandler.submitPdfParseTask(fileLink);
+                    log.info("PDF解析任务提交成功，taskId: {}", taskId);
+
+                    // 查询解析任务结果
+                    String markdownUrl = mineruApiHandler.queryParseResult(taskId);
+                    log.info("PDF解析任务完成，markdownUrl: {}", markdownUrl);
+
+                    // 下载Markdown内容
+                    String markdownContent = mineruApiHandler.downloadMarkdown(markdownUrl);
+                    log.info("Markdown内容下载成功，长度: {}", markdownContent.length());
+
+                    return markdownContent;
+                } catch (Exception ex) {
+                    log.error("PDF解析为Markdown失败: {}", ex.getMessage(), ex);
+                    throw new OssFileException(ex.getMessage());
+                }
+            }
+        } else if (".doc".equalsIgnoreCase(fileExt) || ".docx".equalsIgnoreCase(fileExt)) {
+            return DocxToMdConverterUtil.convertToMarkdown(filePath);
+        } else {
+            throw new OssFileException("暂不支持该类型文件转换");
         }
     }
 }

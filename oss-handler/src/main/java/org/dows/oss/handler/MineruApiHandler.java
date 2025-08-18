@@ -1,9 +1,14 @@
 package org.dows.oss.handler;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,33 +41,32 @@ public class MineruApiHandler {
      */
     public String submitPdfParseTask(String fileUrl) {
         try {
-            String url = mineruApiUrl;
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("file_url", fileUrl);
-            requestBody.put("output_format", "markdown");
-            requestBody.put("ocr", true);
-            requestBody.put("formula", true);
-            requestBody.put("table", true);
+            requestBody.put("url", fileUrl);
+//            requestBody.put("output_format", "markdown");
+            requestBody.put("is_ocr", true);
+            requestBody.put("enable_formula", false);
+            requestBody.put("enable_table", true);
 
             Map<String, String> headers = new HashMap<>();
             headers.put("Authorization", "Bearer " + mineruApiKey);
             headers.put("Content-Type", "application/json");
 
             // 创建请求实体
-            org.springframework.http.HttpHeaders httpHeaders = new org.springframework.http.HttpHeaders();
-            httpHeaders.setAll(headers);
-            org.springframework.http.HttpEntity<Map<String, Object>> requestEntity = 
-                    new org.springframework.http.HttpEntity<>(requestBody, httpHeaders);
-
-            // 发送请求
-            org.springframework.http.ResponseEntity<String> response = 
-                    restTemplate.postForEntity(url, requestEntity, String.class);
-
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    mineruApiUrl,
+                    new HttpEntity<>(JSONUtil.parse(requestBody).toString(), new HttpHeaders() {{
+                        setAll(headers);
+                    }}),
+                    String.class
+            );
+            log.info("---------------提交PDF解析任务返回参数：{}", response);
             if (response.getStatusCode().is2xxSuccessful()) {
                 String responseBody = response.getBody();
                 JSONObject jsonObject = JSONObject.parseObject(responseBody);
-                if (jsonObject.containsKey("task_id")) {
-                    return jsonObject.getString("task_id");
+                if (jsonObject != null && jsonObject.containsKey("data")) {
+                    return jsonObject.getJSONObject("data").getString("task_id");
                 } else {
                     log.error("提交PDF解析任务失败: {}", responseBody);
                     throw new RuntimeException("提交PDF解析任务失败: " + responseBody);
@@ -94,25 +98,29 @@ public class MineruApiHandler {
             // 创建请求实体
             org.springframework.http.HttpHeaders httpHeaders = new org.springframework.http.HttpHeaders();
             httpHeaders.setAll(headers);
-            org.springframework.http.HttpEntity<?> requestEntity = 
-                    new org.springframework.http.HttpEntity<>(httpHeaders);
+            HttpEntity<?> requestEntity = new HttpEntity<>(httpHeaders);
 
             // 循环查询直到任务完成或超时
             while (System.currentTimeMillis() - startTime < timeoutMs) {
                 // 发送请求
-                org.springframework.http.ResponseEntity<String> response = 
-                        restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, requestEntity, String.class);
+                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+                log.info("---------------查询解析任务结果返回参数：{}", response);
 
                 if (response.getStatusCode().is2xxSuccessful()) {
                     String responseBody = response.getBody();
                     JSONObject jsonObject = JSONObject.parseObject(responseBody);
-                    String state = jsonObject.getString("state");
-
-                    if ("done".equals(state)) {
-                        return jsonObject.getString("full_zip_url");
-                    } else if ("error".equals(state)) {
-                        log.error("解析任务失败: {}", jsonObject.getString("message"));
-                        throw new RuntimeException("解析任务失败: " + jsonObject.getString("message"));
+                    if (jsonObject != null && !jsonObject.containsKey("data")) {
+                        JSONObject data = jsonObject.getJSONObject("data");
+                        String state = data.getString("state");
+                        if ("done".equals(state)) {
+                            return data.getString("full_zip_url");
+                        } else if ("error".equals(state)) {
+                            log.error("解析任务失败: {}", jsonObject.getString("message"));
+                            throw new RuntimeException("解析任务失败: " + jsonObject.getString("message"));
+                        } else {
+                            // 任务未完成，等待后重试
+                            Thread.sleep(2000); // 等待2秒后重试
+                        }
                     } else {
                         // 任务未完成，等待后重试
                         Thread.sleep(2000); // 等待2秒后重试
@@ -146,14 +154,12 @@ public class MineruApiHandler {
             headers.put("Authorization", "Bearer " + mineruApiKey);
 
             // 创建请求实体
-            org.springframework.http.HttpHeaders httpHeaders = new org.springframework.http.HttpHeaders();
+            HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setAll(headers);
-            org.springframework.http.HttpEntity<?> requestEntity = 
-                    new org.springframework.http.HttpEntity<>(httpHeaders);
+            HttpEntity<?> requestEntity = new HttpEntity<>(httpHeaders);
 
             // 发送请求下载ZIP文件
-            org.springframework.http.ResponseEntity<byte[]> response = 
-                    restTemplate.exchange(zipUrl, org.springframework.http.HttpMethod.GET, requestEntity, byte[].class);
+            ResponseEntity<byte[]> response = restTemplate.exchange(zipUrl, HttpMethod.GET, requestEntity, byte[].class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 byte[] zipBytes = response.getBody();

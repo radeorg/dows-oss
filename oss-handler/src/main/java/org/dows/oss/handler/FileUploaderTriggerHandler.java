@@ -53,6 +53,7 @@ public class FileUploaderTriggerHandler {
         List<OssTriggerEntity> ossTriggerEntities = ossTriggerHandler.triggerList(ossIdentifier.getOssIdentifierId());
         if (ossTriggerEntities != null) {
             OssFileEntity ossFile = new OssFileEntity();
+            String fileLink = "";
             for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
                 if (ossTriggerEntity != null) {
                     FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
@@ -63,7 +64,14 @@ public class FileUploaderTriggerHandler {
                         OssDetailEntity ossDetail = ossDetailHandler.saveOssDetail(ossFile, ossTriggerEntity, ossIdentifier.getChannel());
 //                        OssFileEntity finalOssFile = ossFile;
 //                        fileUploadTaskExecutor.execute(() -> {
+                        // 后面的转换Md文件需要上传文件的链接地址
+                        ossDetail.setFileLink(fileLink);
                         fileTrigger.trigger(ossFile, ossDetail, ossTriggerEntity);
+                        if (ossTriggerEntity.getSeq() == 2) {
+                            fileLink = ossDetail.getFileLink();
+                        } else {
+                            fileLink = "";
+                        }
 //                        });
                     }
                 }
