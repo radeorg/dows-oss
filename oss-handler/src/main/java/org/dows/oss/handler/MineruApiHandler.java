@@ -109,7 +109,7 @@ public class MineruApiHandler {
                 if (response.getStatusCode().is2xxSuccessful()) {
                     String responseBody = response.getBody();
                     JSONObject jsonObject = JSONObject.parseObject(responseBody);
-                    if (jsonObject != null && !jsonObject.containsKey("data")) {
+                    if (jsonObject != null && jsonObject.containsKey("data")) {
                         JSONObject data = jsonObject.getJSONObject("data");
                         String state = data.getString("state");
                         if ("done".equals(state)) {

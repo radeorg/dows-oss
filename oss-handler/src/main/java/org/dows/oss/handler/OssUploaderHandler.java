@@ -35,7 +35,7 @@ public class OssUploaderHandler {
         checkFileExtension(fileName);
         String savePath = String.format("%s/%s.%s", orgImgPath, UUID.randomUUID(), fileName.substring(fileName.lastIndexOf(".")+1));
         try {
-            return tencentOssClient.upLoad(file.getInputStream(), savePath, false);
+            return tencentOssClient.upLoad(file.getInputStream(), savePath, true);
         } catch (IOException e) {
             log.error("上传文件失败: {}", fileName, e);
             throw new RuntimeException(e);
@@ -67,7 +67,7 @@ public class OssUploaderHandler {
     public OssInfo uploadFileContent(OssUploadHandlerRequest request, String content){
         if (request.getChannel() != null && request.getChannel().equals("COS")) {
             String savePath = getCosSavePath(request);
-            return tencentOssClient.upLoad(new ByteArrayInputStream(content.getBytes()), savePath, false);
+            return tencentOssClient.upLoad(new ByteArrayInputStream(content.getBytes()), savePath, true);
         }
         return null;
     }
