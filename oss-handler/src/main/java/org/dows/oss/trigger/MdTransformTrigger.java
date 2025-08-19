@@ -64,10 +64,10 @@ public class MdTransformTrigger implements FileTrigger {
     private String pdfConvertToMarkdown(String fileExt, String filePath){
         // 如果是PDF文件，则调用Mineru API解析为Markdown
         if (SUPPORTED_FILE_EXTENSIONS.contains(fileExt)) {
-            try {
-                return FileParseUtil.convertToMarkdown(filePath);
-            } catch (Exception e) {
-                log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
+//            try {
+//                return FileParseUtil.convertToMarkdown(filePath);
+//            } catch (Exception e) {
+//                log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
                 try {
                     // 提交PDF解析任务
                     String taskId = mineruApiHandler.submitPdfParseTask(filePath);
@@ -86,7 +86,7 @@ public class MdTransformTrigger implements FileTrigger {
                     log.error("PDF解析为Markdown失败: {}", ex.getMessage(), ex);
                     throw new OssFileException(ex.getMessage());
                 }
-            }
+//            }
         } else {
             throw new OssFileException("暂不支持该类型文件转换");
         }

@@ -36,6 +36,7 @@ public class FileUploader {
     private final OssDetailHandler ossDetailHandler;
     @Value("${rade.oss.path:/radeorg}")
     private String orgPath;
+    private static final List<String> SUPPORTED_FILE_EXTENSIONS = List.of(".doc", ".docx", ".pdf");
 
     private final OssTriggerHandler ossTriggerHandler;
     private final OssFileHandler ossFileHandler;
@@ -142,28 +143,32 @@ public class FileUploader {
                     distinctMd5s.add(md5);
                 } else {
                     String fileName = getFileName(info.getFile());
-                    String targetDirectory = getTargetDirectory(ossUploadRequest.getSource());
-                    String filePath = getFilePath(targetDirectory, fileName, md5);
-                    File dest = new File(filePath);
-                    File parentDir = dest.getParentFile();
-                    try {
-                        if (!parentDir.exists()) {
-                            if (!parentDir.mkdirs()) {
-                                throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
+                    if (!SUPPORTED_FILE_EXTENSIONS.contains(CommonUtil.getFileExt(fileName))) {
+                        failInfo.put(info.getMd5(), "暂不支持该类型文件上传");
+                    } else {
+                        String targetDirectory = getTargetDirectory(ossUploadRequest.getSource());
+                        String filePath = getFilePath(targetDirectory, fileName, md5);
+                        File dest = new File(filePath);
+                        File parentDir = dest.getParentFile();
+                        try {
+                            if (!parentDir.exists()) {
+                                if (!parentDir.mkdirs()) {
+                                    throw new IOException("目录创建失败: " + parentDir.getAbsolutePath());
+                                }
                             }
-                        }
-                        info.getFile().transferTo(dest);
+                            info.getFile().transferTo(dest);
 
-                        // 执行触发器
-                        fileUploaderTriggerHandler.trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
+                            // 执行触发器
+                            fileUploaderTriggerHandler.trigger(info, ossIdentifierEntity, filePath, fileName, dest.length());
 
-                        successNum++;
-                    } catch (Exception e) {
-                        log.error("文件上传失败: {}", fileName, e);
-                        if (dest.exists() && !dest.delete()) {
-                            log.error("文件删除失败: {}", dest.getAbsolutePath());
+                            successNum++;
+                        } catch (Exception e) {
+                            log.error("文件上传失败: {}", fileName, e);
+                            if (dest.exists() && !dest.delete()) {
+                                log.error("文件删除失败: {}", dest.getAbsolutePath());
+                            }
+                            failInfo.put(info.getMd5(), e.getMessage());
                         }
-                        failInfo.put(info.getMd5(), e.getMessage());
                     }
                 }
             } else {
