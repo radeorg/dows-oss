@@ -87,6 +87,12 @@
                 <version>${aspectj.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>libphonenumber</artifactId>
+                <version>9.0.12</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
