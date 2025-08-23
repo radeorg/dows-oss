@@ -1,11 +1,6 @@
-import io.github.jonathanlink.PDFLayoutTextStripper;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.text.PDFTextStripperByArea;
-import org.apache.pdfbox.tools.PDFText2Markdown;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 
@@ -13,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class FileExtractor {
     public static void main(String[] args) throws Exception {
@@ -37,8 +33,19 @@ public class FileExtractor {
 
 
 // 再跑正则去掉水印
-        txt = txt.replaceAll("(?i)[0-9a-f]{30,}|(?i)[a-z]{2,3}_\\s*[a-z]{3,4}\\s*j", " ");
-        System.out.println("@@@@@@@@@@@@@@@@@@@@"+txt);
+//        txt = txt.replaceAll("(?i)[0-9a-f]{30,}|(?i)[a-z]{2,3}_\\s*[a-z]{3,4}\\s*j", " ");
+//        System.out.println("@@@@@@@@@@@@@@@@@@@@"+txt);
+
+
+        List<String> cn = ExtractUtil.getPhones(txt, "CN");
+        List<String> email = ExtractUtil.getEmail(txt);
+
+        for (String s : email) {
+            System.out.println("=========="+ email);
+        }
+        for (String s : cn) {
+            System.out.println("======================="+s);
+        }
 
 
     }
@@ -52,7 +59,7 @@ public class FileExtractor {
 
             String text = tika.parseToString(inputStream);
 
-            System.out.println("手机：" + PhoneExtractor.getPhones(text, "CN"));
+            System.out.println("手机：" + ExtractUtil.getPhones(text, "CN"));
 //            System.out.println("邮箱：" + EmailExtractor.getEmails(text));
             System.out.println(text);
             return text;
