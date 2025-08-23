@@ -29,14 +29,8 @@ public class ExtractUtil {
         Matcher m = EMAIL_PATTERN.matcher(text);
         while (m.find()) {
             String e = m.group();
-            if (validator.isValid(e)) list.add(e);   // 格式 + 域名校验
+            if (validator.isValid(e)) list.add(e);
         }
         return list;
     }
-
-    /*public static void main(String[] args) {
-        String txt = "张三 138-1234-5678 李四 +86 159 8888 8888";
-        System.out.println(getPhones(txt, "CN"));
-        // 输出: [+8613812345678, +8615988888888]
-    }*/
 }

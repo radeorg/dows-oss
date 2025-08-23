@@ -10,6 +10,8 @@ import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.util.ExtractUtil;
 import org.dows.rade.util.SpringUtil;
 
+import java.util.List;
+
 public interface FileTrigger {
 
     void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity);
@@ -30,13 +32,17 @@ public interface FileTrigger {
         if (!callbackTarget.isEmpty()) {
             String[] split = callbackTarget.split(":");
             if (split.length > 0) {
-                String phone = ExtractUtil.getPhones(content, "CN").getFirst();//CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
-                String email = ExtractUtil.getEmail(content).getFirst();
-                OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
+                List<String> phones = ExtractUtil.getPhones(content, "CN");
+                List<String> emails = ExtractUtil.getEmail(content);
+                if (!phones.isEmpty()&& !emails.isEmpty()) {
+                    String phone = phones.get(0);
+                    String email = emails.get(0);
+                    OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
 
-                FileCallback fileCallback = getFileCallback(split[0]);
-                if (fileCallback != null) {
-                    return fileCallback.callback(request, ossTriggerEntity);
+                    FileCallback fileCallback = getFileCallback(split[0]);
+                    if (fileCallback != null) {
+                        return fileCallback.callback(request, ossTriggerEntity);
+                    }
                 }
             }
         }
