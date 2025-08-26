@@ -38,19 +38,22 @@ public interface FileTrigger {
             String[] split = callbackTarget.split(":");
             if (split.length > 0) {
                 FileCallback fileCallback = getFileCallback(split[0]);
+                String phone = null;
+                String email = null;
                 if (StrUtil.isNotBlank(content)) {
                     List<String> phones = ExtractUtil.getPhones(content, "CN");
                     List<String> emails = ExtractUtil.getEmail(content);
                     if (!phones.isEmpty() && !emails.isEmpty()) {
-                        String phone = phones.get(0);
-                        String email = emails.get(0);
-                        OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
-                        return fileCallback.callback(request, ossTriggerEntity);
+                        phone = phones.get(0);
+                        email = emails.get(0);
                     }
-                } else {
+                }
+                OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
+                return fileCallback.callback(request, ossTriggerEntity);
+                /* else {
                     OssUploadCallbackRequest ossUploadCallbackRequest = buildCallbackRequest(ossDetail);
                     return fileCallback.callback(ossUploadCallbackRequest, ossTriggerEntity);
-                }
+                }*/
             }
         }
         throw new OssFileException("未设置回调目标callbackTarget!格式为:[bean://beanName#method,http://xxxx/...]");
