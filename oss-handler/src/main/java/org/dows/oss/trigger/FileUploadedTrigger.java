@@ -33,7 +33,7 @@ public class FileUploadedTrigger implements FileTrigger {
             OssUploadHandlerRequest request = ossDetailHandler.toOssUploadHandlerRequest(ossFile, ossDetail);
             OssInfo info = ossUploaderHandler.uploadOriginalFile(request);
             if (info != null) {
-                System.out.println("------------" + info.getFilePath());
+                //System.out.println("------------" + info.getFilePath());
                 // 更新文件上传链接信息
                 ossDetailHandler.updateOssDetailFileInfo(info, ossDetail);
 
