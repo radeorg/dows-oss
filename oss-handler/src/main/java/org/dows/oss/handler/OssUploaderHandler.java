@@ -56,7 +56,7 @@ public class OssUploaderHandler {
         String savePath = getCosSavePath(request);
         FileInputStream file = new FileInputStream(request.getFileLocalPath());
         if (request.getChannel().equals("COS")) {
-            return tencentOssClient.upLoad(new BufferedInputStream(file), savePath, false);
+            return tencentOssClient.upLoad(new BufferedInputStream(file), savePath, true);
         }
         return null;
     }

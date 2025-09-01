@@ -1,7 +1,9 @@
 package org.dows.oss.trigger;
 
 import cn.hutool.core.util.StrUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.dows.oss.callback.FileCallback;
+import org.dows.oss.constant.PatternConstant;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
@@ -10,6 +12,7 @@ import org.dows.oss.request.OssUploadCallbackRequest;
 import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.util.ExtractUtil;
+import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.util.SpringUtil;
 
 import java.util.List;
@@ -41,12 +44,9 @@ public interface FileTrigger {
                 String phone = null;
                 String email = null;
                 if (StrUtil.isNotBlank(content)) {
-                    List<String> phones = ExtractUtil.getPhones(content, "CN");
-                    List<String> emails = ExtractUtil.getEmail(content);
-                    if (!phones.isEmpty() && !emails.isEmpty()) {
-                        phone = phones.get(0);
-                        email = emails.get(0);
-                    }
+                    phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
+                    phone = StringUtils.isNotEmpty(phone) ? formatPhoneNumber(phone) : "";
+                    email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
                 }
                 OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
                 return fileCallback.callback(request, ossTriggerEntity);
@@ -86,5 +86,17 @@ public interface FileTrigger {
         request.setFileName(ossDetail.getFileName());
         request.setOperatorId(ossDetail.getOperatorId());
         return request;
+    }
+
+    private String formatPhoneNumber(String phone) {
+        // 去除所有非数字字符
+        String cleaned = phone.replaceAll("[^0-9]", "");
+
+        // 去除中国大陆国际区号86前缀
+        if (cleaned.startsWith("86")) {
+            cleaned = cleaned.substring(2);
+        }
+
+        return cleaned;
     }
 }
