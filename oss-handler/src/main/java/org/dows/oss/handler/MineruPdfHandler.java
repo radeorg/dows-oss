@@ -21,7 +21,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MineruApiHandler {
+public class MineruPdfHandler implements Pdf2TxtHandler{
 
     private final RestTemplate restTemplate;
 
@@ -34,6 +34,12 @@ public class MineruApiHandler {
     @Value("${mineru.api.key}")
     private String mineruApiKey;
 
+
+
+    @Override
+    public String convert(String filePath) {
+        return "";
+    }
     /**
      * 提交PDF解析任务
      * @param fileUrl PDF文件URL
@@ -208,4 +214,6 @@ public class MineruApiHandler {
             throw new RuntimeException("下载Markdown内容异常: " + e.getMessage(), e);
         }
     }
+
+
 }
