@@ -73,7 +73,11 @@ public class FileUploader {
 
             OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
             if (ossFile != null) {
-                fileUploaderTriggerHandler.repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
+                if (ossFile.getAppId().equals(info.getAppId())) {
+                    log.error("文件流上传失败: {}", request.getFileName(), "文件重复");
+                } else {
+                    fileUploaderTriggerHandler.repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
+                }
             } else {
                 String originalFileName = request.getFileName();
                 String targetDirectory = getTargetDirectory(request.getSource());
