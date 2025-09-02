@@ -12,6 +12,7 @@ import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.handler.Pdf2TxtHandler;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
+import org.dows.oss.util.PdfParseMarkDownUtil;
 import org.dows.oss.utils.DocxToMdConverterUtil;
 import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
@@ -70,7 +71,7 @@ public class MdTransformTrigger implements FileTrigger {
         if (SUPPORTED_FILE_EXTENSIONS.contains(fileExt)) {
             try {
                 if (".pdf".equals(fileExt)) {
-                    return FileParseUtil.convertToMarkdown(filePath);
+                    return PdfParseMarkDownUtil.convertToMarkdown(localFilePath);
                 } else {
                     return DocxToMdConverterUtil.convertToMarkdown(localFilePath);
                 }
