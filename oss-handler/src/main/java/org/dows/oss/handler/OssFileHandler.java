@@ -41,9 +41,9 @@ public class OssFileHandler {
     }
 
     @Transactional
-    public void deleteByMd5AndAppId(String md5, String appId) {
+    public void deleteByOssFileIdAndAppId(Long ossFileId, String appId) {
         OssFileEntity entity = ossFileService.getOne(QueryWrapper.create()
-                .eq(OssFileEntity::getMd5, md5)
+                .eq(OssFileEntity::getOssFileId, ossFileId)
                 .eq(OssFileEntity::getAppId, appId));
         if (entity != null){
             ossFileService.removeById(entity.getOssFileId());

@@ -115,8 +115,8 @@ public class FileUploader {
         return ossUploaderHandler.downloadFile(filePath);
     }
 
-    public void delete(String md5, String appId) {
-        ossFileHandler.deleteByMd5AndAppId(md5, appId);
+    public void delete(Long ossFileId, String appId) {
+        ossFileHandler.deleteByOssFileIdAndAppId(ossFileId, appId);
     }
 
     /**

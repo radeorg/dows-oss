@@ -47,7 +47,7 @@ public class OssUploaderRest implements FileUploaderApi {
     }
 
     @Override
-    public void delete(String md5, String appId) {
-        fileUploader.delete(md5, appId);
+    public void delete(Long ossFileId, String appId) {
+        fileUploader.delete(ossFileId, appId);
     }
 }

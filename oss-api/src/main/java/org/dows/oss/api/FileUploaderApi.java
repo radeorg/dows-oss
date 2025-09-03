@@ -50,5 +50,5 @@ public interface FileUploaderApi {
      * 删除文件
      */
     @PostMapping("/v1/open/oss/delete")
-    void delete(@RequestParam String md5, @RequestParam String appId);
+    void delete(@RequestParam Long ossFileId, @RequestParam String appId);
 }
