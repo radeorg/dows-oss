@@ -75,7 +75,7 @@ public class PdfParseMarkDownUtil {
     }
 
     private static boolean isWatermarkText(String text) {
-        return text.length() < 2 || WATERMARK_PATTERN.matcher(text).find();
+        return text.trim().isEmpty() || WATERMARK_PATTERN.matcher(text).matches();
     }
 
     /**
@@ -112,6 +112,6 @@ public class PdfParseMarkDownUtil {
     }
 
     public static void main(String[] args) throws IOException {
-        System.out.println(convertToMarkdown("C:\\Users\\Administrator\\Pictures\\Saved Pictures\\王大锤 8年，应聘前端开发工程师 上海8-13K【BOSS直聘】-试用水印.pdf"));
+        System.out.println(convertToMarkdown("C:\\Users\\Administrator\\Pictures\\Saved Pictures\\东软-前端0506-上海太保-杜运涛.pdf"));
     }
 }

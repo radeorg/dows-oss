@@ -2,6 +2,8 @@ package org.dows.oss.trigger;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.dows.oss.constant.PatternConstant;
 import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
@@ -13,8 +15,8 @@ import org.dows.oss.handler.Pdf2TxtHandler;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.util.PdfParseMarkDownUtil;
+import org.dows.oss.utils.CommonUtil;
 import org.dows.oss.utils.DocxToMdConverterUtil;
-import org.dows.oss.utils.FileParseUtil;
 import org.dows.rade.oss.OssInfo;
 import org.springframework.stereotype.Component;
 
@@ -69,40 +71,52 @@ public class MdTransformTrigger implements FileTrigger {
     private String pdfConvertToMarkdown(String fileExt, String filePath, String localFilePath) {
         // 如果是PDF文件，则调用Mineru API解析为Markdown
         if (SUPPORTED_FILE_EXTENSIONS.contains(fileExt)) {
+            String content = "";
             try {
                 if (".pdf".equals(fileExt)) {
-                    return PdfParseMarkDownUtil.convertToMarkdown(localFilePath);
+                    content = PdfParseMarkDownUtil.convertToMarkdown(localFilePath);
                 } else {
-                    return DocxToMdConverterUtil.convertToMarkdown(localFilePath);
+                    content = DocxToMdConverterUtil.convertToMarkdown(localFilePath);
                 }
             } catch (Exception e) {
                 log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
-                try {
-                    return pythonPdfHandler.convert(filePath);
-                } catch (Exception ex) {
-                    try {
-                        // 提交PDF解析任务
-                        String taskId = mineruPdfHandler.submitPdfParseTask(filePath);
-                        log.info("PDF解析任务提交成功，taskId: {}", taskId);
-
-                        // 查询解析任务结果
-                        String markdownUrl = mineruPdfHandler.queryParseResult(taskId);
-                        log.info("PDF解析任务完成，markdownUrl: {}", markdownUrl);
-
-                        // 下载Markdown内容
-                        String markdownContent = mineruPdfHandler.downloadMarkdown(markdownUrl);
-                        log.info("Markdown内容下载成功，长度: {}", markdownContent.length());
-
-                        return markdownContent;
-                    } catch (Exception exc) {
-                        log.error("PDF解析为Markdown失败: {}", ex.getMessage(), ex);
-                        throw new OssFileException(ex.getMessage());
-                    }
-
-                }
+                return pythonAnalysePdf(filePath);
             }
+
+            String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
+            String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
+            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
+                return pythonAnalysePdf(filePath);
+            }
+
+            return content;
         } else {
             throw new OssFileException("暂不支持该类型文件转换");
+        }
+    }
+
+    private String pythonAnalysePdf(String filePath){
+        try {
+            return pythonPdfHandler.convert(filePath);
+        } catch (Exception ex) {
+            try {
+                // 提交PDF解析任务
+                String taskId = mineruPdfHandler.submitPdfParseTask(filePath);
+                log.info("PDF解析任务提交成功，taskId: {}", taskId);
+
+                // 查询解析任务结果
+                String markdownUrl = mineruPdfHandler.queryParseResult(taskId);
+                log.info("PDF解析任务完成，markdownUrl: {}", markdownUrl);
+
+                // 下载Markdown内容
+                String markdownContent = mineruPdfHandler.downloadMarkdown(markdownUrl);
+                log.info("Markdown内容下载成功，长度: {}", markdownContent.length());
+
+                return markdownContent;
+            } catch (Exception exc) {
+                log.error("PDF解析为Markdown失败: {}", ex.getMessage(), ex);
+                throw new OssFileException(exc.getMessage());
+            }
         }
     }
 }
