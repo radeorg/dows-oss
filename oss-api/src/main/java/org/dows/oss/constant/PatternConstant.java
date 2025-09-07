@@ -16,10 +16,13 @@ public class PatternConstant {
 
     // 邮箱正则（RFC 5322 标准）
     public static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"
+            "^[A-Za-z0-9][A-Za-z0-9._%+-]{0,63}@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
     );
 
     public static void main(String[] args) {
         System.out.println(CommonUtil.extractPattern("192-3396-8804", PatternConstant.PHONE_PATTERN));
+        System.out.println(CommonUtil.extractPattern("18916137726@163.com", EMAIL_PATTERN));
+        System.out.println(CommonUtil.extractPattern("user+tag@example.com", EMAIL_PATTERN));
+        System.out.println(CommonUtil.extractPattern("john.doe@sub.domain.co.uk", EMAIL_PATTERN));
     }
 }

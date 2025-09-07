@@ -8,10 +8,7 @@ import org.dows.oss.entity.OssDetailEntity;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssTriggerEntity;
 import org.dows.oss.exception.OssFileException;
-import org.dows.oss.handler.MineruPdfHandler;
-import org.dows.oss.handler.OssDetailHandler;
-import org.dows.oss.handler.OssUploaderHandler;
-import org.dows.oss.handler.Pdf2TxtHandler;
+import org.dows.oss.handler.*;
 import org.dows.oss.request.OssUploadHandlerRequest;
 import org.dows.oss.response.CallbackResponse;
 import org.dows.oss.util.PdfParseMarkDownUtil;
@@ -34,8 +31,8 @@ public class MdTransformTrigger implements FileTrigger {
     private final OssUploaderHandler ossUploaderHandler;
     private final OssDetailHandler ossDetailHandler;
     private final MineruPdfHandler mineruPdfHandler;
-
     private final Pdf2TxtHandler pythonPdfHandler;
+    private final OssFailHandler ossFailHandler;
 
     @Override
     public void trigger(OssFileEntity ossFile, OssDetailEntity ossDetail, OssTriggerEntity ossTriggerEntity) {
@@ -47,7 +44,13 @@ public class MdTransformTrigger implements FileTrigger {
             request.setFileExt(".md");
 
             String filePath = ossUploaderHandler.presignedCosViewUrl(ossDetail.getFilePath());
-            String parseContent = pdfConvertToMarkdown(ossFile.getFileExt(), filePath, request.getFileLocalPath());
+            String parseContent = null;
+            try {
+                parseContent = pdfConvertToMarkdown(ossFile.getFileExt(), filePath, request.getFileLocalPath());
+            } catch (Exception e) {
+                ossFailHandler.saveOssFail(ossFile, ossDetail, ossTriggerEntity, e.getMessage());
+                throw e;
+            }
 
             // 文本上传云服务
             OssInfo info = ossUploaderHandler.uploadFileContent(request, parseContent);

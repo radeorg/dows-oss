@@ -54,6 +54,7 @@ public class FileUploaderTriggerHandler {
         if (ossTriggerEntities != null) {
             OssFileEntity ossFile = new OssFileEntity();
             String tempFilePath = "";
+            String tempFileLink = "";
             for (OssTriggerEntity ossTriggerEntity : ossTriggerEntities) {
                 if (ossTriggerEntity != null) {
                     FileTrigger fileTrigger = fileTriggerMap.get(ossTriggerEntity.getTrigger());
@@ -66,11 +67,14 @@ public class FileUploaderTriggerHandler {
 //                        fileUploadTaskExecutor.execute(() -> {
                         // 后面的转换Md文件需要上传文件的链接地址
                         ossDetail.setFilePath(tempFilePath);
+                        ossDetail.setFileLink(tempFileLink);
                         fileTrigger.trigger(ossFile, ossDetail, ossTriggerEntity);
                         if (ossTriggerEntity.getSeq() == 2) {
                             tempFilePath = ossDetail.getFilePath();
+                            tempFileLink = ossDetail.getFileLink();
                         } else {
                             tempFilePath = "";
+                            tempFileLink = "";
                         }
 //                        });
                     }

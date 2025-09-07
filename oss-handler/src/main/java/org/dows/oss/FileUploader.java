@@ -8,6 +8,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.dows.oss.constant.OssExceptionStatusCode;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssIdentifierEntity;
+import org.dows.oss.exception.OssFileException;
 import org.dows.oss.handler.*;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
@@ -50,6 +51,12 @@ public class FileUploader {
         log.info("文件上传");
         OssIdentifierEntity ossIdentifierEntity = validateOssIdentifier(request.getSource(), request.getSecretId(), request.getSecretKey());
 
+        if (request.getInfos().isEmpty()) {
+            throw new OssFileException("至少上传一个文件");
+        }
+        if (request.getInfos().size() > 10) {
+            throw new OssFileException("一次最多只能上传10个文件");
+        }
         return uploadFileToLocal(request, ossIdentifierEntity);
     }
 
