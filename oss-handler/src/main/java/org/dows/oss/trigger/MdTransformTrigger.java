@@ -80,13 +80,19 @@ public class MdTransformTrigger implements FileTrigger {
                 }
             } catch (Exception e) {
                 log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
-                return pythonAnalysePdf(filePath);
+//                return pythonAnalysePdf(filePath);
+                throw new OssFileException("PDF解析失败！");
             }
 
             String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
             String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
-            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
-                return pythonAnalysePdf(filePath);
+//            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
+//                return pythonAnalysePdf(filePath);
+//            }
+            if (StringUtils.isEmpty(phone)) {
+                throw new OssFileException("未识别到手机号，无效简历！");
+            } else if (StringUtils.isEmpty(email)) {
+                throw new OssFileException("未识别到邮箱，无效简历！");
             }
 
             return content;
