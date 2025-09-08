@@ -16,7 +16,7 @@ public class PatternConstant {
 
     // 邮箱正则（RFC 5322 标准）
     public static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "^[A-Za-z0-9][A-Za-z0-9._%+-]{0,63}@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+            "\\b[A-Za-z0-9][A-Za-z0-9._%+-]{0,63}@[A-Za-z0-9-]+\\.[A-Za-z0-9-]+(?:\\.[A-Za-z]{2,})?\\b"
     );
 
     public static void main(String[] args) {
