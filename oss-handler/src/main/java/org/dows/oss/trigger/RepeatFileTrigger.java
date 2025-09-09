@@ -32,7 +32,7 @@ public interface RepeatFileTrigger {
             String[] split = callbackTarget.split(":");
             if (split.length > 0) {
                 String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
-                String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
+                String email = CommonUtil.extractPatterns(content, PatternConstant.EMAIL_REGEXES);
                 OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
 
                 FileCallback fileCallback = getFileCallback(split[0]);
