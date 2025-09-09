@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 public class PatternConstant {
     // 支持带分隔符（-或空格）及纯数字的手机号正则
     public static final Pattern PHONE_PATTERN = Pattern.compile(
-            "\\b1(?:3[0-9]|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8[0-9]|9[0-35-9])([-\\s]?\\d{4}){2}\\b"
+            "(?<!\\d)(?:\\+86\\s?|0086\\s?)?1[3-9]\\d(?:[ -]?\\d{4}){2}(?!\\d)"
     );
 
     // 6种不同严格程度的邮箱正则表达式
@@ -31,7 +31,8 @@ public class PatternConstant {
     };
 
     public static void main(String[] args) {
-        System.out.println(CommonUtil.extractPattern("192-3396-8804", PatternConstant.PHONE_PATTERN));
+        String text = "用户提供的号码列表：+8613211111111、0086 13211111111、132 1111 1111、132-1111-1111、TEL:13812345678、联系电话 13987654321、13233968042";
+        System.out.println(CommonUtil.extractPattern(text, PatternConstant.PHONE_PATTERN));
         System.out.println(CommonUtil.extractPatterns("18916137726@163.com", EMAIL_REGEXES));
         System.out.println(CommonUtil.extractPatterns("user+tag@example.com", EMAIL_REGEXES));
         System.out.println(CommonUtil.extractPatterns("john.doe@sub.domain.co.uk", EMAIL_REGEXES));
