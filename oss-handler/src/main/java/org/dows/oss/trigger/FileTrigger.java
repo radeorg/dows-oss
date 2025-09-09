@@ -11,11 +11,8 @@ import org.dows.oss.exception.OssFileException;
 import org.dows.oss.request.OssUploadCallbackRequest;
 import org.dows.oss.request.OssUploadTriggerCallbackRequest;
 import org.dows.oss.response.CallbackResponse;
-import org.dows.oss.util.ExtractUtil;
 import org.dows.oss.utils.CommonUtil;
 import org.dows.rade.util.SpringUtil;
-
-import java.util.List;
 
 public interface FileTrigger {
 
@@ -46,7 +43,7 @@ public interface FileTrigger {
                 if (StrUtil.isNotBlank(content)) {
                     phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
                     phone = StringUtils.isNotEmpty(phone) ? formatPhoneNumber(phone) : "";
-                    email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
+                    email = CommonUtil.extractPatterns(content, PatternConstant.EMAIL_REGEXES);
                 }
                 OssUploadTriggerCallbackRequest request = toTriggerCallbackRequest(ossDetail, phone, email);
                 return fileCallback.callback(request, ossTriggerEntity);

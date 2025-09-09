@@ -73,7 +73,6 @@ public class CommonUtil {
                     return results.get(0);
                 }
             }
-            return null;
         }
         return "";
     }
