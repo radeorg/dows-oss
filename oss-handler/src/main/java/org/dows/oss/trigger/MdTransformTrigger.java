@@ -47,6 +47,7 @@ public class MdTransformTrigger implements FileTrigger {
             String parseContent = null;
             try {
                 parseContent = pdfConvertToMarkdown(ossFile.getFileExt(), filePath, request.getFileLocalPath());
+                validatePhoneAndEmail(parseContent);
             } catch (Exception e) {
                 ossFailHandler.saveOssFail(ossFile, ossDetail, ossTriggerEntity, parseContent, e.getMessage());
                 throw e;
@@ -74,31 +75,17 @@ public class MdTransformTrigger implements FileTrigger {
     private String pdfConvertToMarkdown(String fileExt, String filePath, String localFilePath) {
         // 如果是PDF文件，则调用Mineru API解析为Markdown
         if (SUPPORTED_FILE_EXTENSIONS.contains(fileExt)) {
-            String content = "";
             try {
                 if (".pdf".equals(fileExt)) {
-                    content = PdfParseMarkDownUtil.convertToMarkdown(localFilePath);
+                    return PdfParseMarkDownUtil.convertToMarkdown(localFilePath);
                 } else {
-                    content = DocxToMdConverterUtil.convertToMarkdown(localFilePath);
+                    return DocxToMdConverterUtil.convertToMarkdown(localFilePath);
                 }
             } catch (Exception e) {
                 log.error("PDF解析为Markdown失败: {}", e.getMessage(), e);
 //                return pythonAnalysePdf(filePath);
                 throw new OssFileException("PDF解析失败！");
             }
-
-            String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
-            String email = CommonUtil.extractPatterns(content, PatternConstant.EMAIL_REGEXES);
-//            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
-//                return pythonAnalysePdf(filePath);
-//            }
-            if (StringUtils.isEmpty(phone)) {
-                throw new OssFileException("未识别到手机号，无效简历！");
-            } else if (StringUtils.isEmpty(email)) {
-                throw new OssFileException("未识别到邮箱，无效简历！");
-            }
-
-            return content;
         } else {
             throw new OssFileException("暂不支持该类型文件转换");
         }
@@ -125,6 +112,21 @@ public class MdTransformTrigger implements FileTrigger {
             } catch (Exception exc) {
                 log.error("PDF解析为Markdown失败: {}", ex.getMessage(), ex);
                 throw new OssFileException(exc.getMessage());
+            }
+        }
+    }
+
+    private void validatePhoneAndEmail(String content){
+        if (StringUtils.isNotEmpty(content)) {
+            String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
+            String email = CommonUtil.extractPatterns(content, PatternConstant.EMAIL_REGEXES);
+//            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
+//                return pythonAnalysePdf(filePath);
+//            }
+            if (StringUtils.isEmpty(phone)) {
+                throw new OssFileException("未识别到手机号，无效简历！");
+            } else if (StringUtils.isEmpty(email)) {
+                throw new OssFileException("未识别到邮箱，无效简历！");
             }
         }
     }
