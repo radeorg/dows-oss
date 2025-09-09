@@ -45,6 +45,10 @@ public class OssFailEntity extends BaseEntity<OssFailEntity> {
     @Column(value = "file_ext")
     private String fileExt;
 
+    @Schema(description = "简历md内容")
+    @Column(value = "content")
+    private String content;
+
     @Schema(description = "触发器（UPLOAD上传、OTT解析）")
     @Column(value = "trigger")
     private String trigger;

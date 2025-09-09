@@ -48,7 +48,7 @@ public class MdTransformTrigger implements FileTrigger {
             try {
                 parseContent = pdfConvertToMarkdown(ossFile.getFileExt(), filePath, request.getFileLocalPath());
             } catch (Exception e) {
-                ossFailHandler.saveOssFail(ossFile, ossDetail, ossTriggerEntity, e.getMessage());
+                ossFailHandler.saveOssFail(ossFile, ossDetail, ossTriggerEntity, parseContent, e.getMessage());
                 throw e;
             }
 
@@ -88,7 +88,7 @@ public class MdTransformTrigger implements FileTrigger {
             }
 
             String phone = CommonUtil.extractPattern(content, PatternConstant.PHONE_PATTERN);
-            String email = CommonUtil.extractPattern(content, PatternConstant.EMAIL_PATTERN);
+            String email = CommonUtil.extractPatterns(content, PatternConstant.EMAIL_REGEXES);
 //            if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(email)) {
 //                return pythonAnalysePdf(filePath);
 //            }

@@ -20,7 +20,7 @@ public class OssFailHandler {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveOssFail(OssFileEntity ossFile, OssDetailEntity ossDetail,
-                            OssTriggerEntity trigger, String failReason) {
+                            OssTriggerEntity trigger, String content, String failReason) {
         OssFailEntity failEntity = new OssFailEntity();
         failEntity.setMd5(ossFile.getMd5());
         failEntity.setFileName(ossFile.getFileName());
@@ -28,6 +28,7 @@ public class OssFailHandler {
         failEntity.setFileExt(ossFile.getFileExt());
         failEntity.setFilePath(ossDetail.getFilePath());
         failEntity.setFileLink(ossDetail.getFileLink());
+        failEntity.setContent(content);
         failEntity.setChannel(ossDetail.getChannel());
         failEntity.setTrigger(trigger.getTrigger());
         failEntity.setFailedReason(failReason);

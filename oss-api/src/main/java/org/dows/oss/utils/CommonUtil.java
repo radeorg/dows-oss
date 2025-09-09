@@ -40,9 +40,6 @@ public class CommonUtil {
         return null;
     }
 
-
-
-
     /**
      * 使用正则表达式提取匹配项
      */
@@ -56,6 +53,27 @@ public class CommonUtil {
             if(!CollectionUtils.isEmpty(results)){
                 return results.get(0);
             }
+        }
+        return "";
+    }
+
+    /**
+     * 使用正则表达式提取匹配项
+     */
+    public static String extractPatterns(String content, String[] patterns) {
+        if (StringUtils.isNotEmpty(content) && patterns != null) {
+            List<String> results = new ArrayList<>();
+            for (String regex : patterns) {
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(content);
+                while (matcher.find()) {
+                    results.add(matcher.group());
+                }
+                if(!CollectionUtils.isEmpty(results)){
+                    return results.get(0);
+                }
+            }
+            return null;
         }
         return "";
     }
