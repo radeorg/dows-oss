@@ -12,6 +12,12 @@
     <artifactId>oss-handler</artifactId>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.dows.cloud</groupId>
+            <artifactId>member-api</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.dows.cloud</groupId>
             <artifactId>oss-service</artifactId>

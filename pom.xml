@@ -26,6 +26,7 @@
         <revision>1.0.1-SNAPSHOT</revision>
         <dows-hrm.version>1.0.0-SNAPSHOT</dows-hrm.version>
         <aac.version>1.0.0-SNAPSHOT</aac.version>
+        <member.version>1.0.0-SNAPSHOT</member.version>
         <mybatis-flex.ext.version>1.10.8.110</mybatis-flex.ext.version>
         <jdk.version>21</jdk.version>
     </properties>
@@ -79,6 +80,12 @@
                 <artifactId>oss-handler</artifactId>
                 <groupId>org.dows.cloud</groupId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.dows.cloud</groupId>
+                <artifactId>member-api</artifactId>
+                <version>${member.version}</version>
             </dependency>
 
             <dependency>

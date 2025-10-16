@@ -5,6 +5,7 @@ import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.dows.member.api.user.UserMemberMetricsApi;
 import org.dows.oss.constant.OssExceptionStatusCode;
 import org.dows.oss.entity.OssFileEntity;
 import org.dows.oss.entity.OssIdentifierEntity;
@@ -43,6 +44,7 @@ public class FileUploader {
     private final OssFileHandler ossFileHandler;
     private final OssUploaderHandler ossUploaderHandler;
     private final FileUploaderTriggerHandler fileUploaderTriggerHandler;
+    private final UserMemberMetricsApi userMemberMetricsApi;
 
     /**
      * 文件上传器
@@ -54,9 +56,8 @@ public class FileUploader {
         if (request.getInfos().isEmpty()) {
             throw new OssFileException("至少上传一个文件");
         }
-        if (request.getInfos().size() > 10) {
-            throw new OssFileException("一次最多只能上传10个文件");
-        }
+        userMemberMetricsApi.validateUploadPermission(request.getInfos().size());
+
         return uploadFileToLocal(request, ossIdentifierEntity);
     }
 
