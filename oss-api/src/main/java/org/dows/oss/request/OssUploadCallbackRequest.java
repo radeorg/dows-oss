@@ -18,6 +18,9 @@ public class OssUploadCallbackRequest {
     @Schema(description = "md5")
     private String md5;
 
+    @Schema(description = "上传类型（0手动上传，1邮箱上传）")
+    private Integer uploadType;
+
     @Schema(description = "应用ID")
     private String appId;
 

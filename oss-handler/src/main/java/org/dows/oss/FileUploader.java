@@ -78,6 +78,7 @@ public class FileUploader {
             OssUploadRequest.OssUploadInfo info = new OssUploadRequest.OssUploadInfo();
             info.setMd5(md5);
             info.setAppId(request.getAppId());
+            info.setUploadType(1);
 
             OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
             if (ossFile != null) {
@@ -136,6 +137,8 @@ public class FileUploader {
         List<String> distinctMd5s = new ArrayList<>();
         Map<String, OssFileEntity> existUploaderFileMd5 = queryExistUploaderFileMd5(ossUploadRequest);
         for (OssUploadRequest.OssUploadInfo info : ossUploadRequest.getInfos()) {
+            info.setUploadType(0);
+
             String md5 = info.getMd5();
             if (!distinctMd5s.contains(md5)) {
                 // 同一份文件在云服务器只存在一份，但是可以有多条企业上传记录

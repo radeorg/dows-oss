@@ -88,6 +88,13 @@ public class OssFileEntity extends BaseEntity<OssFileEntity> {
     private String source;
 
     /**
+     * 上传类型（0手动上传，1邮箱上传）
+     */
+    @Schema(description = "上传类型（0手动上传，1邮箱上传）")
+    @Column(value = "upload_type")
+    private Integer uploadType;
+
+    /**
      * 应用ID
      */
     @Schema(description = "应用ID")

@@ -31,6 +31,7 @@ public class RepeatFilePreloadTrigger implements FileTrigger{
 
     private OssUploadCallbackRequest toOssUploadResponse(OssFileEntity ossFileEntity){
         OssUploadCallbackRequest response = new OssUploadCallbackRequest();
+        response.setUploadType(ossFileEntity.getUploadType());
         response.setMd5(ossFileEntity.getMd5());
         response.setOssFileId(ossFileEntity.getOssFileId());
         response.setFileName(ossFileEntity.getFileName());

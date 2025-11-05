@@ -25,6 +25,9 @@ public class OssUploadRequest {
     @Data
     public static class OssUploadInfo {
 
+        @Schema(description = "上传类型（0手动上传，1邮箱上传）")
+        Integer uploadType;
+
         @Schema(description = "md5")
         private String md5;
 

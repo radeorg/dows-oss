@@ -28,6 +28,7 @@ public class OssFileHandler {
 
     public OssFileEntity saveOssFile(OssUploadRequest.OssUploadInfo info, OssIdentifierEntity ossIdentifierEntity, String filePath, String fileName, Long fileSize){
         OssFileEntity entity = new OssFileEntity();
+        entity.setUploadType(info.getUploadType());
         entity.setFileName(fileName);
         entity.setMd5(info.getMd5());
         entity.setFileExt(CommonUtil.getFileExt(fileName));
