@@ -28,7 +28,7 @@ import java.util.List;
 @EnableCaching // 开启缓存
 @EnableScheduling
 @SpringBootApplication
-@ComponentScan(basePackages = {"org.dows.oss", "org.dows.rade.oss"})
+@ComponentScan(basePackages = {"org.dows.oss", "org.dows.rade.oss", "org.dows.rade"})
 public class OssApplication implements AppInstance {
 
     private static volatile ConfigurableApplicationContext context;

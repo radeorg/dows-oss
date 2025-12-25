@@ -10,6 +10,7 @@ import org.dows.oss.handler.OssUploaderHandler;
 import org.dows.oss.request.OssUploadInputStreamRequest;
 import org.dows.oss.request.OssUploadRequest;
 import org.dows.rade.oss.OssInfo;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
@@ -46,6 +47,7 @@ public class OssUploaderRest implements FileUploaderApi {
         fileUploader.upload(is, request);
     }
 
+    @PostMapping("/v1/open/oss/download")
     @Operation(summary = "下载文件")
     @Override
     public String downloadFile(String filePath) {

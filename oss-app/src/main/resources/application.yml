@@ -28,7 +28,14 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-
+rade:
+  jackson:
+    timestamp: true
+    big-number-to-string: true
+  cacheName: hrm
+  encryptor:
+    enable: true
+    algorithm: AES
 
 
 springdoc:
@@ -40,7 +47,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
   group-configs:
-    - group: 'oss'
+    - group: 'rest'
       paths-to-match: '/**'
       packages-to-scan: org.dows.oss.rest
 
