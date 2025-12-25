@@ -27,6 +27,23 @@ spring:
       enabled: true
       max-file-size: 100MB
       max-request-size: 100MB
+
+
+
+
+springdoc:
+  cache:
+    disabled: true
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  group-configs:
+    - group: 'oss'
+      paths-to-match: '/**'
+      packages-to-scan: org.dows.oss.rest
+
 logging:
   level:
     root: info

@@ -1,5 +1,7 @@
 package org.dows.oss.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dows.oss.FileUploader;
@@ -16,6 +18,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
+@Tag(name = "OSS上传接口")
 public class OssUploaderRest implements FileUploaderApi {
 
     private final FileUploader fileUploader;
@@ -31,16 +34,19 @@ public class OssUploaderRest implements FileUploaderApi {
         return ossUploaderHandler.presignedCosViewUrl(filePath);
     }
 
+    @Operation(summary = "上传文件")
     @Override
     public Map<String, Object> uploadFile(OssUploadRequest ossUploadRequest) {
         return fileUploader.upload(ossUploadRequest);
     }
 
+    @Operation(summary = "上传文件")
     @Override
     public void uploadFile(InputStream is, OssUploadInputStreamRequest request) {
         fileUploader.upload(is, request);
     }
 
+    @Operation(summary = "下载文件")
     @Override
     public String downloadFile(String filePath) {
         return fileUploader.downloadFile(filePath);
