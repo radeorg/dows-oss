@@ -83,7 +83,9 @@ public class FileUploader {
             OssFileEntity ossFile = ossFileHandler.getByMd5(md5);
             if (ossFile != null) {
                 if (ossFile.getAppId().equals(info.getAppId())) {
-                    log.error("文件流上传失败: {}", request.getFileName(), "文件重复");
+                    String error = "文件流上传失败: " + request.getFileName() + "，文件重复";
+                    log.error(error);
+                    throw new OssException(error);
                 } else {
                     fileUploaderTriggerHandler.repeatTrigger(info, ossIdentifierEntity, ossFile, request.getFileName());
                 }
@@ -101,6 +103,7 @@ public class FileUploader {
             }
         } catch (Exception e) {
             log.error("文件流上传失败: {}", request.getFileName(), e);
+            throw new OssException(e.getMessage());
         }
     }
 
